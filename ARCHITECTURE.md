@@ -131,8 +131,8 @@ Field names inside the responses are **not** taken from that library
 |---|---|
 | Session and token | `GET /` and read `<meta name="csrf_token" content="…">` from the HTML head; otherwise `GET webserver/token`, then `GET webserver/SesTokInfo` (`TokInfo`). A session cookie is set by the router |
 | Request headers | `__RequestVerificationToken` on every request. Responses may rotate it via `__RequestVerificationTokenone` / `…two` headers, or `__RequestVerificationToken`. The client keeps a small token queue |
-| Request/response format | XML, wrapped in `<request>…</request>`; errors arrive as `<error><code>…` (e.g. 125002/125003 wrong session token, 100003 no rights, 100004 busy, 100002 unsupported) |
-| Login | `GET user/state-login` (state, `password_type`, `rsapadingtype`), then `POST user/login` with `Username`, `Password`, `password_type`. `password_type` 4: `base64(sha256(user + base64(sha256(password) hex) + token) hex)`; type 0 is base64 of the password. Login then refreshes the CSRF token |
+| Request/response format | XML, wrapped in `<request>…</request>`; errors arrive as `<error><code>…` (100002 unsupported, 100003 login required, 100004 busy, 125002 session/CSRF error, 125003 wrong session token; login errors 108001-108007, where 108007 is the password-attempt lockout) |
+| Login | `GET user/state-login` (state, `password_type`, `rsapadingtype`), then `POST user/login` with `Username`, `Password`, `password_type`. `password_type` 4: `base64(sha256(user + base64(sha256(password) hex) + token) hex)`; type 0 is base64 of the password; type 3 also exists (base64, after a password change) and its handling is unverified. Login then refreshes the CSRF token |
 | Signal | `GET device/signal` (rssi, rsrp, rsrq, sinr, cell, band, pci; values usually carry unit suffixes such as `dBm`, `dB`, and may be prefixed `>`/`<`, so parsing must be tolerant) |
 | Status | `GET monitoring/status` (connection status, signal icon, network type, roaming, WAN IP, …) |
 | Operator | `GET net/current-plmn` |
