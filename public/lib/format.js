@@ -1,6 +1,7 @@
 // Pure helpers for the webapp. No DOM, no network: importable from Node tests.
 
-const toNum = (v) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+const toNum = (v) =>
+  typeof v === "number" && Number.isFinite(v) ? v : undefined;
 
 /** Decimal units, as routers and carriers count data. */
 export function formatBytes(bytes) {
@@ -15,7 +16,10 @@ export function formatBytes(bytes) {
     i++;
   }
   const digits = v >= 100 ? 0 : v >= 10 ? 1 : 2;
-  const text = i === 0 && Number.isInteger(v * 10) && v < 10 ? v.toFixed(1) : v.toFixed(digits);
+  const text =
+    i === 0 && Number.isInteger(v * 10) && v < 10
+      ? v.toFixed(1)
+      : v.toFixed(digits);
   return `${text} ${units[i]}`;
 }
 
@@ -102,7 +106,8 @@ export function smsSegments(text) {
   const encoding = gsm ? "gsm7" : "ucs2";
   const length = gsm ? septets : String(text).length;
   const [single, multi] = gsm ? [160, 153] : [70, 67];
-  const segments = length === 0 ? 0 : length <= single ? 1 : Math.ceil(length / multi);
+  const segments =
+    length === 0 ? 0 : length <= single ? 1 : Math.ceil(length / multi);
   const perSegment = segments <= 1 ? single : multi;
   const remaining = segments <= 1 ? single - length : segments * multi - length;
   return { encoding, length, segments, perSegment, remaining };

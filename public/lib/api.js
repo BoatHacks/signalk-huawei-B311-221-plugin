@@ -15,7 +15,8 @@ async function request(path, { method = "GET", body } = {}) {
     res = await fetch(BASE + path, {
       method,
       credentials: "include",
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      headers:
+        body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
@@ -28,7 +29,12 @@ async function request(path, { method = "GET", body } = {}) {
     data = undefined;
   }
   if (!res.ok) {
-    const msg = typeof data?.error === "string" ? data.error : typeof data?.message === "string" ? data.message : `HTTP ${res.status}`;
+    const msg =
+      typeof data?.error === "string"
+        ? data.error
+        : typeof data?.message === "string"
+          ? data.message
+          : `HTTP ${res.status}`;
     throw new ApiError(res.status, msg);
   }
   return data;
@@ -36,7 +42,11 @@ async function request(path, { method = "GET", body } = {}) {
 
 /** SMS list may be a bare array or { messages: [] }. */
 export function normaliseSms(data) {
-  const list = Array.isArray(data) ? data : Array.isArray(data?.messages) ? data.messages : [];
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.messages)
+      ? data.messages
+      : [];
   return list.filter((m) => m && typeof m === "object" && m.id !== undefined);
 }
 
@@ -44,7 +54,9 @@ export const api = {
   status: () => request("status"),
   sms: async (limit = 50) => normaliseSms(await request(`sms?limit=${limit}`)),
   send: (to, text) => request("sms", { method: "POST", body: { to, text } }),
-  markRead: (id) => request(`sms/${encodeURIComponent(id)}/read`, { method: "POST" }),
-  remove: (id) => request(`sms/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  markRead: (id) =>
+    request(`sms/${encodeURIComponent(id)}/read`, { method: "POST" }),
+  remove: (id) =>
+    request(`sms/${encodeURIComponent(id)}`, { method: "DELETE" }),
   resetPlan: () => request("plan/reset", { method: "POST" }),
 };

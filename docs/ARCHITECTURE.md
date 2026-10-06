@@ -178,15 +178,20 @@ sender; the router speaks CESU-8 for characters outside the BMP.
 signalk-huawei-b311-221/
 ├── package.json
 ├── src/
-│   ├── index.ts              plugin entry, lifecycle, config schema
-│   ├── router-client.ts
-│   ├── pollers.ts
-│   ├── usage-tracker.ts
-│   ├── sms-store.ts
-│   ├── publisher.ts
-│   ├── routes.ts
-│   ├── tiles-provider.ts
-│   └── types.ts
+│   ├── index.ts              plugin entry: schema, start/stop, routes
+│   ├── runtime.ts            builds and wires everything for one config
+│   ├── config.ts             schema, defaults, validation
+│   ├── router-client.ts      one session, typed errors, SMS send/manage
+│   ├── login.ts, xml.ts, cesu8.ts, errors.ts, sms-id.ts
+│   ├── parsers.ts            router XML to domain types (field-name table)
+│   ├── pollers.ts            three schedules, backoff, link state
+│   ├── usage-tracker.ts      plan periods and counter resets
+│   ├── sms-store.ts          new-message detection, recent cache
+│   ├── state-store.ts        atomic JSON persistence
+│   ├── publisher.ts, paths.ts, radio-quality.ts
+│   ├── routes.ts             REST routes, access rules, 503 when stopped
+│   ├── tiles-provider.ts     statusTileExamples resource provider
+│   ├── constants.ts, types.ts
 ├── status-tiles-examples.json
 ├── public/                   webapp
 ├── scripts/                  capture-fixtures.mjs, redact.mjs

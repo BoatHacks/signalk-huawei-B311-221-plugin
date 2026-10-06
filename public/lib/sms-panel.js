@@ -1,6 +1,7 @@
 // SMS inbox and compose form. All message content is set via textContent.
-import { smsSegments } from "./format.js";
+
 import { el } from "./dom.js";
+import { smsSegments } from "./format.js";
 import { baseCss } from "./styles.js";
 
 const css = `
@@ -56,22 +57,31 @@ export class LteSms extends HTMLElement {
     // Keep what the user is typing across the re-render.
     const old = this.#root.querySelector("form");
     if (old) {
-      this.#draft = { to: old.elements.to.value, text: old.elements.text.value };
+      this.#draft = {
+        to: old.elements.to.value,
+        text: old.elements.text.value,
+      };
     }
     const scroll = this.#root.querySelector(".list")?.scrollTop ?? 0;
     const hadFocus = this.#root.activeElement?.name;
-    for (const n of [...this.#root.childNodes]) if (n.nodeName !== "STYLE") n.remove();
+    for (const n of [...this.#root.childNodes])
+      if (n.nodeName !== "STYLE") n.remove();
     const { messages, canWrite, error, handlers } = this.#state;
 
     const panel = el("section", "panel teal");
-    const unread = messages.filter((m) => m.direction !== "out" && !m.read).length;
+    const unread = messages.filter(
+      (m) => m.direction !== "out" && !m.read,
+    ).length;
     panel.append(el("h2", "", unread ? `SMS (${unread} unread)` : "SMS"));
     if (error) panel.append(el("p", "result err", error));
 
     const list = el("ul", "list");
     if (messages.length === 0) list.append(el("li", "muted", "No messages."));
     for (const m of messages) {
-      const li = el("li", `msg${m.read === false && m.direction !== "out" ? " unread" : ""}`);
+      const li = el(
+        "li",
+        `msg${m.read === false && m.direction !== "out" ? " unread" : ""}`,
+      );
       const head = el("div", "head");
       if (m.read === false && m.direction !== "out") {
         const dot = el("span", "dot");
@@ -79,9 +89,21 @@ export class LteSms extends HTMLElement {
         dot.setAttribute("aria-label", "unread");
         head.append(dot);
       }
-      head.append(el("span", "peer mono", `${m.direction === "out" ? "To " : ""}${m.peer ?? "?"}`));
+      head.append(
+        el(
+          "span",
+          "peer mono",
+          `${m.direction === "out" ? "To " : ""}${m.peer ?? "?"}`,
+        ),
+      );
       const when = Date.parse(m.timestamp ?? "");
-      head.append(el("span", "mono", Number.isNaN(when) ? "" : new Date(when).toLocaleString()));
+      head.append(
+        el(
+          "span",
+          "mono",
+          Number.isNaN(when) ? "" : new Date(when).toLocaleString(),
+        ),
+      );
       li.append(head, el("div", "body", String(m.text ?? "")));
       if (canWrite) {
         const row = el("div", "row");
@@ -94,7 +116,8 @@ export class LteSms extends HTMLElement {
         const d = el("button", "", "Delete");
         d.type = "button";
         d.addEventListener("click", () => {
-          if (globalThis.confirm("Delete this message from the router?")) handlers.remove?.(m.id);
+          if (globalThis.confirm("Delete this message from the router?"))
+            handlers.remove?.(m.id);
         });
         row.append(d);
         li.append(row);
@@ -104,7 +127,14 @@ export class LteSms extends HTMLElement {
     panel.append(list);
 
     if (canWrite) panel.append(this.#form());
-    else panel.append(el("p", "muted", "Admin rights are required to send or manage messages."));
+    else
+      panel.append(
+        el(
+          "p",
+          "muted",
+          "Admin rights are required to send or manage messages.",
+        ),
+      );
     this.#root.append(panel);
     list.scrollTop = scroll;
     if (hadFocus) this.#root.querySelector(`[name="${hadFocus}"]`)?.focus();
@@ -116,7 +146,14 @@ export class LteSms extends HTMLElement {
     const lblTo = el("label", "", "Recipient");
     lblTo.htmlFor = "to";
     const to = el("input");
-    Object.assign(to, { id: "to", name: "to", type: "tel", autocomplete: "off", placeholder: "+358401234567", value: this.#draft.to });
+    Object.assign(to, {
+      id: "to",
+      name: "to",
+      type: "tel",
+      autocomplete: "off",
+      placeholder: "+358401234567",
+      value: this.#draft.to,
+    });
     to.inputMode = "tel";
     const lblText = el("label", "", "Message");
     lblText.htmlFor = "text";
@@ -125,14 +162,19 @@ export class LteSms extends HTMLElement {
     const count = el("div", "count mono");
     const send = el("button", "", this.#sending ? "Sending..." : "Send");
     send.type = "submit";
-    const result = el("div", `result${this.#result ? ` ${this.#result.kind}` : ""}`, this.#result?.message ?? "");
+    const result = el(
+      "div",
+      `result${this.#result ? ` ${this.#result.kind}` : ""}`,
+      this.#result?.message ?? "",
+    );
     result.setAttribute("role", "status");
 
     const update = () => {
       const s = smsSegments(text.value);
       count.textContent = `${s.length} chars, ${s.segments} SMS (${s.encoding === "gsm7" ? "7-bit" : "Unicode"}), ${s.remaining} left`;
       count.classList.toggle("warn", s.segments > 1);
-      send.disabled = this.#sending || to.value.trim() === "" || text.value.trim() === "";
+      send.disabled =
+        this.#sending || to.value.trim() === "" || text.value.trim() === "";
     };
     to.addEventListener("input", update);
     text.addEventListener("input", update);

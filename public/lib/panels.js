@@ -1,6 +1,14 @@
 // Read-only status panels: signal, connection, data plan.
-import { daysUntil, formatBytes, formatNumber, metricFraction, metricState, planState } from "./format.js";
+
 import { el } from "./dom.js";
+import {
+  daysUntil,
+  formatBytes,
+  formatNumber,
+  metricFraction,
+  metricState,
+  planState,
+} from "./format.js";
 import { baseCss } from "./styles.js";
 
 const THEME = { green: "green", amber: "amber", red: "red", neutral: "" };
@@ -15,7 +23,8 @@ class Panel extends HTMLElement {
   }
   /** Replace the panel body. */
   mount(node) {
-    for (const n of [...this.#root.childNodes]) if (n.nodeName !== "STYLE") n.remove();
+    for (const n of [...this.#root.childNodes])
+      if (n.nodeName !== "STYLE") n.remove();
     this.#root.append(node);
   }
   static css = "";
@@ -59,8 +68,14 @@ export class LteSignal extends Panel {
     let worst = "neutral";
     for (const [label, key, value, unit] of defs) {
       const state = metricState(key, value, { stale });
-      if (state === "red" || (state === "amber" && worst !== "red") || (state === "green" && worst === "neutral")) worst = state;
-      const known = !stale && typeof value === "number" && Number.isFinite(value);
+      if (
+        state === "red" ||
+        (state === "amber" && worst !== "red") ||
+        (state === "green" && worst === "neutral")
+      )
+        worst = state;
+      const known =
+        !stale && typeof value === "number" && Number.isFinite(value);
       const m = el("div", `m ${THEME[state]}`.trim());
       m.append(el("div", "name", label));
       const v = el("div", "val mono", known ? formatNumber(value) : "-");
@@ -92,14 +107,24 @@ export class LteConnection extends Panel {
     const panel = el("section", "panel");
     panel.append(el("h2", "", "Connection"));
     if (link === "unreachable") {
-      panel.append(el("p", "banner", "Router unreachable. Values shown as unknown."));
+      panel.append(
+        el("p", "banner", "Router unreachable. Values shown as unknown."),
+      );
     } else if (link === "auth-failed") {
-      panel.append(el("p", "banner", "Router login failed. Check the username and password in the plugin settings."));
+      panel.append(
+        el(
+          "p",
+          "banner",
+          "Router login failed. Check the username and password in the plugin settings.",
+        ),
+      );
     } else if (link === "connecting") {
       panel.append(el("p", "banner warn", "Connecting to router..."));
     }
-    const dash = (v) => (stale || v === undefined || v === null || v === "" ? "-" : String(v));
-    const yes = (v) => (stale || typeof v !== "boolean" ? "-" : v ? "yes" : "no");
+    const dash = (v) =>
+      stale || v === undefined || v === null || v === "" ? "-" : String(v);
+    const yes = (v) =>
+      stale || typeof v !== "boolean" ? "-" : v ? "yes" : "no";
     const rows = [
       ["Link", link ?? "-"],
       ["Operator", dash(st.operator?.name)],
@@ -111,7 +136,14 @@ export class LteConnection extends Panel {
     ];
     const dl = el("dl");
     for (const [k, v] of rows) dl.append(el("dt", "", k), el("dd", "mono", v));
-    const tone = !stale && c.serviceAvailable && link === "ok" ? (c.roaming ? "amber" : "green") : link === "unreachable" || link === "auth-failed" ? "red" : "";
+    const tone =
+      !stale && c.serviceAvailable && link === "ok"
+        ? c.roaming
+          ? "amber"
+          : "green"
+        : link === "unreachable" || link === "auth-failed"
+          ? "red"
+          : "";
     if (tone) panel.classList.add(tone);
     panel.append(dl);
     this.mount(panel);
@@ -132,15 +164,30 @@ export class LtePlan extends Panel {
     const panel = el("section", "panel");
     panel.append(el("h2", "", "Data plan"));
     if (!plan) {
-      panel.append(el("p", "muted", "Not configured. Set the plan size and reset day in the plugin settings."));
+      panel.append(
+        el(
+          "p",
+          "muted",
+          "Not configured. Set the plan size and reset day in the plugin settings.",
+        ),
+      );
       this.mount(panel);
       return;
     }
-    const ratio = plan.usedRatio ?? (plan.totalBytes ? plan.usedBytes / plan.totalBytes : undefined);
+    const ratio =
+      plan.usedRatio ??
+      (plan.totalBytes ? plan.usedBytes / plan.totalBytes : undefined);
     const state = stale ? "neutral" : planState(ratio);
     if (THEME[state]) panel.classList.add(THEME[state]);
-    const pct = typeof ratio === "number" ? Math.min(100, Math.max(0, ratio * 100)) : 0;
-    panel.append(el("div", "big mono", typeof ratio === "number" ? `${Math.round(ratio * 100)} %` : "-"));
+    const pct =
+      typeof ratio === "number" ? Math.min(100, Math.max(0, ratio * 100)) : 0;
+    panel.append(
+      el(
+        "div",
+        "big mono",
+        typeof ratio === "number" ? `${Math.round(ratio * 100)} %` : "-",
+      ),
+    );
     const gauge = el("div", "gauge");
     gauge.setAttribute("role", "progressbar");
     gauge.setAttribute("aria-valuenow", String(Math.round(pct)));
@@ -153,10 +200,18 @@ export class LtePlan extends Panel {
     const days = daysUntil(plan.periodEnd, now);
     const dl = el("dl");
     dl.append(
-      el("dt", "", "Used"), el("dd", "mono", formatBytes(plan.usedBytes)),
-      el("dt", "", "Remaining"), el("dd", "mono", formatBytes(plan.remainingBytes)),
-      el("dt", "", "Plan size"), el("dd", "mono", formatBytes(plan.totalBytes)),
-      el("dt", "", "Resets in"), el("dd", "mono", days === undefined ? "-" : `${days} day${days === 1 ? "" : "s"}`),
+      el("dt", "", "Used"),
+      el("dd", "mono", formatBytes(plan.usedBytes)),
+      el("dt", "", "Remaining"),
+      el("dd", "mono", formatBytes(plan.remainingBytes)),
+      el("dt", "", "Plan size"),
+      el("dd", "mono", formatBytes(plan.totalBytes)),
+      el("dt", "", "Resets in"),
+      el(
+        "dd",
+        "mono",
+        days === undefined ? "-" : `${days} day${days === 1 ? "" : "s"}`,
+      ),
     );
     panel.append(dl);
     if (canWrite && onReset) {
@@ -164,7 +219,12 @@ export class LtePlan extends Panel {
       const b = el("button", "", "Restart plan period");
       b.type = "button";
       b.addEventListener("click", () => {
-        if (globalThis.confirm("Restart the plan period now? Used data is reset to zero.")) onReset();
+        if (
+          globalThis.confirm(
+            "Restart the plan period now? Used data is reset to zero.",
+          )
+        )
+          onReset();
       });
       actions.append(b);
       panel.append(actions);

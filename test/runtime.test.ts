@@ -57,6 +57,16 @@ async function settle(cond: () => boolean, ms = 4000) {
   }
 }
 
+/** Waits until the three initial polls (signal, traffic, SMS) have all published. */
+async function initialPollsDone(f: ReturnType<typeof fakeApp>) {
+  await settle(
+    () =>
+      f.values("networking.lte.rsrp").length > 0 &&
+      f.values("networking.lte.usage.rx").length > 0 &&
+      f.values("networking.lte.sms.unread").length > 0,
+  );
+}
+
 const baseConfig = (
   url: string,
   over: Partial<PluginConfig> = {},
@@ -133,7 +143,7 @@ test("the plan raises a warning and then an alarm, once per change", async () =>
   const { router, extra, f, runtime } = await boot();
   try {
     await runtime.start();
-    await settle(() => f.values("networking.lte.plan.usedRatio").length > 0);
+    await initialPollsDone(f);
     extra["monitoring/traffic-statistics"] = traffic(0, 850_000_000);
     await runtime.pollNow("traffic");
     await settle(
@@ -161,7 +171,7 @@ test("usage survives a stop and start", async () => {
   const a = await boot();
   try {
     await a.runtime.start();
-    await settle(() => a.f.values("networking.lte.plan.usedRatio").length > 0);
+    await initialPollsDone(a.f);
     a.extra["monitoring/traffic-statistics"] = traffic(0, 500_000_000);
     await a.runtime.pollNow("traffic");
     await settle(
@@ -217,7 +227,7 @@ test("a router that goes away flips the link without blanking the last values", 
   const { router, f, runtime } = await boot();
   try {
     await runtime.start();
-    await settle(() => f.values("networking.lte.rsrp").length > 0);
+    await initialPollsDone(f);
     await router.close();
     await runtime.pollNow("signal");
     await settle(() =>
@@ -235,7 +245,7 @@ test("a new SMS raises one notification, and a restart does not repeat it", asyn
   const a = await boot();
   try {
     await a.runtime.start();
-    await settle(() => a.f.values("networking.lte.sms.unread").length > 0);
+    await initialPollsDone(a.f);
     const smsNotes = (f: ReturnType<typeof fakeApp>) =>
       f.deltas
         .flatMap((d) => d.updates.flatMap((u) => u.values ?? []))
@@ -263,7 +273,7 @@ test("a new SMS raises one notification, and a restart does not repeat it", asyn
     );
     try {
       await b.runtime.start();
-      await settle(() => b.f.values("networking.lte.sms.unread").length > 0);
+      await initialPollsDone(b.f);
       assert.equal(smsNotes(b.f).length, 0);
     } finally {
       await b.runtime.stop();
@@ -278,7 +288,7 @@ test("SMS notifications can be switched off", async () => {
   const { router, extra, f, runtime } = await boot({}, { notifyNewSms: false });
   try {
     await runtime.start();
-    await settle(() => f.values("networking.lte.sms.unread").length > 0);
+    await initialPollsDone(f);
     extra["sms/sms-list"] = smsList(
       message(40002, "+358409999999", "second", "2023-10-07 08:00:00"),
       message(40001, "+358401234567", "first", "2023-10-06 12:00:00"),
@@ -302,7 +312,7 @@ test("route actions reach the router, and a plan reset zeroes usage", async () =
   const { router, extra, f, runtime } = await boot();
   try {
     await runtime.start();
-    await settle(() => f.values("networking.lte.plan.usedRatio").length > 0);
+    await initialPollsDone(f);
     const deps = runtime.routeDeps(() => true);
     await deps.actions.send("+358401234567", "hello");
     assert.ok(
@@ -330,7 +340,7 @@ test("stop logs out, flushes state and leaves no timers behind", async () => {
   const { router, f, timers, dir, runtime } = await boot();
   try {
     await runtime.start();
-    await settle(() => f.values("networking.lte.plan.usedRatio").length > 0);
+    await initialPollsDone(f);
     await runtime.stop();
     assert.equal(router.calls.at(-1)?.path, "/api/user/logout");
     assert.ok(existsSync(join(dir, "usage.json")));

@@ -82,16 +82,23 @@ messages and registered routes:
 - routes answer 503 when stopped, and work when running;
 - `stop()` logs out, flushes state and leaves no timers.
 
+## Status
+
+Built and tested end to end against the mock router. The built `dist/`
+package was smoke-tested (loads, tile set resolves, starts against an
+unresponsive router without crashing). Not run on a real router or inside a
+real Signal K server.
+
 ## Implementation Steps
 
-- [ ] Wait for the router client module; confirm its API against
+- [x] Wait for the router client module; confirm its API against
       `RouterPort` in `src/pollers.ts`, adapt (error names `AuthFailed`,
       `Unreachable`)
-- [ ] Write the end-to-end tests
-- [ ] Write `src/runtime.ts` (build/teardown, handlers, status snapshot)
-- [ ] Rewrite `src/index.ts` (schema from `configSchema()`,
+- [x] Write the end-to-end tests
+- [x] Write `src/runtime.ts` (build/teardown, handlers, status snapshot)
+- [x] Rewrite `src/index.ts` (schema from `configSchema()`,
       `registerWithRouter`, start/stop, tiles provider)
-- [ ] Add `public` to the lint script, `signalk.appIcon`, `files`
+- [x] Add `public` to the lint script, `signalk.appIcon`, `files`
 - [ ] Update SPEC/ARCHITECTURE where the build differs
 
 ## Files to Create/Modify

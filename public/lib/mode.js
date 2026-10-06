@@ -1,7 +1,8 @@
 // Day/night mode from Signal K environment.mode, polled over REST.
 // Any error or unknown value falls back to day (never dim by accident).
 
-export const ENVIRONMENT_MODE_URL = "/signalk/v1/api/vessels/self/environment/mode";
+export const ENVIRONMENT_MODE_URL =
+  "/signalk/v1/api/vessels/self/environment/mode";
 export const MODE_POLL_MS = 30_000;
 
 export function parseMode(data) {

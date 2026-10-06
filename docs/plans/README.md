@@ -9,4 +9,4 @@ One short plan per feature or issue, written before the code. Start from
 | Plan | Status |
 |---|---|
 | [capture-fixtures.md](./capture-fixtures.md) | Built, awaiting a run on real hardware |
-| [plugin-wiring.md](./plugin-wiring.md) | Planned (waiting for the router client) |
+| [plugin-wiring.md](./plugin-wiring.md) | Built, awaiting a run on real hardware and a real server |

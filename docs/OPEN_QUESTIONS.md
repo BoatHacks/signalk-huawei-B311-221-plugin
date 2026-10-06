@@ -36,6 +36,10 @@ code and docs get updated.
 | D25 | Unread and connected flags | SMS unread when `Smstat` is 0, read otherwise (missing counts as read); connected when `ConnectionStatus` is 901; service available from the first evidence among `ServiceStatus === 2`, a non-zero network type, or connected/bars | Reference-library conventions; guesses until captured | `src/parsers.ts` |
 | D26 | Auth failure | A rejected login latches `AuthFailed`: no further network traffic until the config changes and a new client is built; a 100002 on `state-login` means "no login needed" | Never retry a rejected login (lockout) | `src/router-client.ts` |
 | D27 | Where uptime and network type come from | Uptime only from an `uptime` field in `monitoring/status` (probably absent, so `networking.modem.uptime` may stay empty); network type probably empty until the `device/signal` field name is known | No extra request for a guess | `src/parsers.ts` |
+| D28 | Configuration problems | A missing password stops the plugin from starting and says so; any other problem (bad URL, plan numbers) is logged, falls back to a safe default, and the plugin still runs | A half-working plugin beats a dead one, except when it cannot log in at all | `src/index.ts`, `src/config.ts` |
+| D29 | While the plugin is stopped or restarting | Every REST route answers 503 | Routes are registered once; the runtime is rebuilt on each config change | `src/routes.ts` |
+| D30 | Plugin status line | "Connecting to the router", "Connected to the router", "Router unreachable, retrying", or an error telling you to fix the login (with a separate message for the router's lockout) | Visible in the Signal K plugin list | `src/runtime.ts` |
+| D31 | Slow-changing paths | Router link, plan and SMS summary are re-published on every signal tick as well as on change, so Status Tiles does not see them go stale | See D16 | `src/runtime.ts` |
 
 ## Open questions (need you or the hardware)
 

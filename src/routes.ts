@@ -213,3 +213,28 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
     }),
   );
 }
+
+/**
+ * Routes are registered once, when the server loads the plugin, but the
+ * plugin may be stopped or restarting. This wraps a router so every handler
+ * answers 503 while `isUp()` is false.
+ */
+export function withAvailability(
+  router: RouterLike,
+  isUp: () => boolean,
+): RouterLike {
+  const wrap =
+    (h: Handler): Handler =>
+    (req, res) =>
+      isUp()
+        ? h(req, res)
+        : res.status(503).json({ error: "The plugin is not running" });
+  return {
+    access: (level) => {
+      const scoped = router.access(level);
+      return { get: (path, ...hs) => scoped.get(path, ...hs.map(wrap)) };
+    },
+    post: (path, ...hs) => router.post(path, ...hs.map(wrap)),
+    delete: (path, ...hs) => router.delete(path, ...hs.map(wrap)),
+  };
+}

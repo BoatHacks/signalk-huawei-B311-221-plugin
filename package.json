@@ -21,8 +21,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "format": "biome check --write src test scripts",
-    "lint": "biome check src test scripts",
+    "format": "biome check --write src test scripts public",
+    "lint": "biome check src test scripts public",
     "test": "node --test --test-force-exit \"test/*.test.ts\" \"test/*.test.mjs\"",
     "prepack": "npm run build"
   },
@@ -34,7 +34,8 @@
     "lte"
   ],
   "signalk": {
-    "displayName": "Huawei B311-221 LTE"
+    "displayName": "Huawei B311-221 LTE",
+    "appIcon": "./icon.png"
   },
   "engines": {
     "node": ">=22.18.0"

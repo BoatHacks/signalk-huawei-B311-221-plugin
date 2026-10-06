@@ -40,6 +40,17 @@ durations overlap and must not be added to wall-clock time.
 | RouterClient and parsers | 169,865 | 7 min 39 s |
 | **Subtotal** | **585,253** | **18 min 14 s of agent time** |
 
+## Harness token budget
+
+A second, live figure: the harness shows the remaining token budget for
+this session. It measures something different from the usage record above
+(it is a countdown of the budget, not the billing counters), so the two do
+not need to match.
+
+| Snapshot (UTC) | Budget | Remaining | Consumed |
+|---|---|---|---|
+| 2026-10-06 23:24 | 15,000,000 | 14,930,849 | 69,151 |
+
 ## Rate limit
 
 The session is in a five-hour usage window that resets at 2026-10-07
@@ -53,3 +64,4 @@ Each automatic resume appends one line: time (UTC), what ran, usage from
 
 | Time (UTC) | Work | Usage at end | Since last line |
 |---|---|---|---|
+| 2026-10-06 23:25 | Built the router client's review, plugin runtime, routes wiring, package checks, docs; went from supervised to running alone | counter unchanged from the first snapshot (89,836 in / 61,325 out); not updating mid-run | none visible |

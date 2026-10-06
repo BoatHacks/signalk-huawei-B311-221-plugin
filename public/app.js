@@ -1,5 +1,5 @@
 // Huawei B311 webapp: polls the plugin REST API and renders four panels.
-import { api, ApiError } from "./lib/api.js";
+import { ApiError, api } from "./lib/api.js";
 import { el } from "./lib/dom.js";
 import { formatAge, isStale } from "./lib/format.js";
 import { startModePolling } from "./lib/mode.js";
@@ -60,8 +60,12 @@ class LteApp extends HTMLElement {
 
     this.#timers.push(startModePolling());
     this.#timers.push(setInterval(() => this.#tick(), 1000));
-    this.#timers.push(setInterval(() => !document.hidden && this.#pollStatus(), STATUS_POLL_MS));
-    this.#timers.push(setInterval(() => !document.hidden && this.#pollSms(), SMS_POLL_MS));
+    this.#timers.push(
+      setInterval(() => !document.hidden && this.#pollStatus(), STATUS_POLL_MS),
+    );
+    this.#timers.push(
+      setInterval(() => !document.hidden && this.#pollSms(), SMS_POLL_MS),
+    );
     document.addEventListener("visibilitychange", this.#onVisible);
     this.#render();
     this.#pollStatus();
@@ -82,7 +86,8 @@ class LteApp extends HTMLElement {
 
   #tick() {
     const st = this.#status;
-    if (st?.updatedAt) this.#refs.age.textContent = `Updated ${formatAge(Date.now() - Date.parse(st.updatedAt))}`;
+    if (st?.updatedAt)
+      this.#refs.age.textContent = `Updated ${formatAge(Date.now() - Date.parse(st.updatedAt))}`;
   }
 
   #noteError(e) {
@@ -98,7 +103,10 @@ class LteApp extends HTMLElement {
       this.#authError = null;
     } catch (e) {
       this.#noteError(e);
-      this.#statusError = e instanceof ApiError && e.status === 0 ? "Cannot reach Signal K server." : e.message;
+      this.#statusError =
+        e instanceof ApiError && e.status === 0
+          ? "Cannot reach Signal K server."
+          : e.message;
     }
     this.#render();
   }
@@ -109,7 +117,8 @@ class LteApp extends HTMLElement {
       this.#smsError = null;
     } catch (e) {
       this.#noteError(e);
-      this.#smsError = e.status === 401 ? null : `Could not load messages: ${e.message}`;
+      this.#smsError =
+        e.status === 401 ? null : `Could not load messages: ${e.message}`;
     }
     this.#render();
   }
@@ -128,7 +137,12 @@ class LteApp extends HTMLElement {
     send: async (to, text) => {
       const err = await this.#action(() => api.send(to, text));
       if (err) {
-        this.#refs.sms.setResult("err", err.status === 403 ? "Admin rights required to send." : `Send failed: ${err.message}`);
+        this.#refs.sms.setResult(
+          "err",
+          err.status === 403
+            ? "Admin rights required to send."
+            : `Send failed: ${err.message}`,
+        );
       } else {
         this.#refs.sms.setResult("ok", "Message sent.");
         this.#pollSms();
@@ -156,21 +170,41 @@ class LteApp extends HTMLElement {
     const st = this.#status;
     // Stale: no snapshot, link not ok, router data older than 60 s, or our
     // own fetch older than 60 s (server unreachable).
-    const stale = !st || isStale(st.updatedAt, now, st.link) || now - this.#statusAt > 60_000;
+    const stale =
+      !st ||
+      isStale(st.updatedAt, now, st.link) ||
+      now - this.#statusAt > 60_000;
     const r = this.#refs;
 
-    r.age.textContent = st ? `Updated ${formatAge(st.updatedAt ? now - Date.parse(st.updatedAt) : undefined)}` : "Loading...";
+    r.age.textContent = st
+      ? `Updated ${formatAge(st.updatedAt ? now - Date.parse(st.updatedAt) : undefined)}`
+      : "Loading...";
 
     const notices = [];
-    if (this.#authError) notices.push(["err", "Log in to Signal K to see router data."]);
+    if (this.#authError)
+      notices.push(["err", "Log in to Signal K to see router data."]);
     else if (this.#statusError) notices.push(["err", this.#statusError]);
-    if (!this.#canWrite) notices.push(["", "Admin rights required to send, delete or reset."]);
-    r.notices.replaceChildren(...notices.map(([k, m]) => el("p", `notice ${k}`, m)));
+    if (!this.#canWrite)
+      notices.push(["", "Admin rights required to send, delete or reset."]);
+    r.notices.replaceChildren(
+      ...notices.map(([k, m]) => el("p", `notice ${k}`, m)),
+    );
 
     r.signal.data = { signal: st?.signal, stale };
     r.connection.data = { status: st ?? undefined, stale };
-    r.plan.data = { plan: st?.plan, stale, canWrite: this.#canWrite, onReset: this.#handlers.resetPlan, now };
-    r.sms.data = { messages: this.#messages, canWrite: this.#canWrite, error: this.#smsError, handlers: this.#handlers };
+    r.plan.data = {
+      plan: st?.plan,
+      stale,
+      canWrite: this.#canWrite,
+      onReset: this.#handlers.resetPlan,
+      now,
+    };
+    r.sms.data = {
+      messages: this.#messages,
+      canWrite: this.#canWrite,
+      error: this.#smsError,
+      handlers: this.#handlers,
+    };
   }
 }
 

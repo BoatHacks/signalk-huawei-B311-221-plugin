@@ -25,9 +25,9 @@ Integration (lead)
 - [x] G. Config schema and validation (`src/config.ts`)
 - [x] H. Pollers with backoff and link state machine (`src/pollers.ts`)
 - [x] I. REST routes with admin checks (`src/routes.ts`)
-- [ ] J. Plugin wiring and end-to-end test with mock router and fake server app
-- [ ] K. Update SPEC/ARCHITECTURE to match what was built; plans in `docs/plans/`
-- [ ] L. README, CHANGELOG, package metadata checks
+- [x] J. Plugin wiring and end-to-end test with mock router and fake server app
+- [x] K. Update SPEC/ARCHITECTURE to match what was built; plans in `docs/plans/`
+- [x] L. README, CHANGELOG, package metadata checks
 
 Blocked on the user or hardware
 - Real router run (Q1), server `meta` behaviour (Q2), SMS encoding (Q3)
@@ -38,3 +38,4 @@ Blocked on the user or hardware
 - 2026-10-06: A, B, D, E, F, G, H, I done and committed (see git log). Agent C (RouterClient) still running when last checked. Next: integrate C, then J (plugin wiring + end-to-end test), K, L. Note for wiring: publish routerLink/sms/plan paths on every poll (tile stale times), call stateStore.flush() on stop, build SMS ids with smsId() from src/sms-id.ts, XML-escape SMS text in the client.
 - 2026-10-06 23:15: running alone. Each resumed run must append a line to the log table in `docs/TIME_AND_TOKENS.md` (time, work, `get_session` usage at the end, difference from the previous line) and add any subagent token totals to its table.
 - 2026-10-06 23:20: C done and verified (279 tests green). Next: J plugin wiring per docs/plans/plugin-wiring.md, then K, L.
+- 2026-10-06 23:25: J (wiring, end-to-end tests, built-package smoke test), K and L done. 293 tests green, lint and typecheck clean. Everything left needs the real router or a real Signal K server (Q1-Q4, Q9) or your decisions: the routine can be disabled.
