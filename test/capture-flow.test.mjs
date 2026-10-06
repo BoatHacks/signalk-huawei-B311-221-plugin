@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { isAllowed, runCapture } from "../scripts/capture-fixtures.mjs";
 import { encodePassword } from "../scripts/login.mjs";
-import { COOKIE, SENSITIVE, TOKENS, startMockRouter } from "./helpers/mock-router.mjs";
+import {
+  COOKIE,
+  SENSITIVE,
+  startMockRouter,
+  TOKENS,
+} from "./helpers/mock-router.mjs";
 
 const quiet = () => {};
 
@@ -50,11 +61,17 @@ test("--no-login captures only the unauthenticated login state", async () => {
 test("a normal run logs in once, captures only allowlisted calls, and logs out last", async () => {
   const { calls, result, outDir } = await capture();
   assert.equal(result.ok, true);
-  assert.equal(calls.filter((c) => sig(c) === "POST /api/user/login").length, 1);
+  assert.equal(
+    calls.filter((c) => sig(c) === "POST /api/user/login").length,
+    1,
+  );
   assert.equal(sig(calls.at(-1)), "POST /api/user/logout");
   for (const c of calls) {
     if (c.path === "/") continue;
-    assert.ok(isAllowed(c.method, c.path.replace(/^\/api\//, "")), `not allowed: ${sig(c)}`);
+    assert.ok(
+      isAllowed(c.method, c.path.replace(/^\/api\//, "")),
+      `not allowed: ${sig(c)}`,
+    );
   }
   const manifest = readJson(join(outDir, "redacted", "manifest.json"));
   assert.equal(manifest.login.ok, true);
@@ -88,7 +105,12 @@ test("cookies and the rotating token are sent back to the router", async () => {
 
 test("no secret, token, cookie or personal value reaches any output file", async () => {
   const { outDir, router } = await capture();
-  const encoded = encodePassword(4, "admin", router.credentials.password, TOKENS.home);
+  const encoded = encodePassword(
+    4,
+    "admin",
+    router.credentials.password,
+    TOKENS.home,
+  );
   const forbidden = [
     router.credentials.password,
     encoded,
@@ -119,7 +141,9 @@ test("a rejected login is attempted once, never retried, and nothing else is req
   assert.equal(result.reason, "login-failed");
   assert.equal(calls.filter((c) => c.path === "/api/user/login").length, 1);
   assert.ok(!calls.some((c) => c.path === "/api/user/logout"));
-  assert.ok(!calls.some((c) => c.path.includes("device/") || c.path.includes("sms/")));
+  assert.ok(
+    !calls.some((c) => c.path.includes("device/") || c.path.includes("sms/")),
+  );
   const manifest = readJson(join(outDir, "redacted", "manifest.json"));
   assert.equal(manifest.login.errorCode, 108006);
   assert.ok(existsSync(join(outDir, "redacted", "user_state-login.xml")));
@@ -148,7 +172,9 @@ test("an endpoint the firmware does not support is recorded and the run continue
 
 test("a token error triggers one token reload and one retry", async () => {
   const { calls, outDir } = await capture({ csrfFailOnce: ["device/signal"] });
-  const homeGets = calls.filter((c) => c.method === "GET" && c.path === "/").length;
+  const homeGets = calls.filter(
+    (c) => c.method === "GET" && c.path === "/",
+  ).length;
   assert.equal(homeGets, 2);
   assert.equal(calls.filter((c) => c.path === "/api/device/signal").length, 2);
   const manifest = readJson(join(outDir, "redacted", "manifest.json"));
@@ -158,7 +184,9 @@ test("a token error triggers one token reload and one retry", async () => {
 });
 
 test("a dropped connection is recorded and logout still happens", async () => {
-  const { calls, outDir, result } = await capture({ destroy: ["monitoring/status"] });
+  const { calls, outDir, result } = await capture({
+    destroy: ["monitoring/status"],
+  });
   assert.equal(result.ok, true);
   const manifest = readJson(join(outDir, "redacted", "manifest.json"));
   assert.equal(
@@ -181,7 +209,9 @@ test("a redirect is recorded but never followed", async () => {
 test("output that still looks sensitive is withheld, with the raw copy kept apart", async () => {
   const blob = "0123456789abcdef0123456789abcdef01234567";
   const { outDir, result } = await capture({
-    extra: { "net/net-mode": `<?xml version="1.0"?><response><Blob>${blob}</Blob></response>` },
+    extra: {
+      "net/net-mode": `<?xml version="1.0"?><response><Blob>${blob}</Blob></response>`,
+    },
   });
   assert.equal(result.ok, true);
   assert.equal(result.redactedWritten, false);
@@ -196,7 +226,10 @@ test("output that still looks sensitive is withheld, with the raw copy kept apar
 test("--keep-raw also writes the unredacted copy", async () => {
   const { outDir } = await capture({}, { keepRaw: true });
   assert.ok(existsSync(join(outDir, "redacted", "manifest.json")));
-  const raw = readFileSync(join(outDir, "UNREDACTED", "device_information.xml"), "utf8");
+  const raw = readFileSync(
+    join(outDir, "UNREDACTED", "device_information.xml"),
+    "utf8",
+  );
   assert.ok(raw.includes(SENSITIVE.imei));
 });
 
@@ -215,17 +248,22 @@ test("--repeat re-captures signal, status and traffic as numbered samples", asyn
     assert.ok(existsSync(join(outDir, "redacted", name)), name);
   }
   assert.equal(calls.filter((c) => c.path === "/api/device/signal").length, 2);
-  assert.equal(calls.filter((c) => c.path === "/api/device/information").length, 1);
+  assert.equal(
+    calls.filter((c) => c.path === "/api/device/information").length,
+    1,
+  );
 });
 
-test("every request and the whole round are timed", async () => {
+test("every request is timed, and one data round is timed separately from the whole run", async () => {
   let t = 0;
   const { outDir } = await capture({}, { now: () => (t += 5) });
   const manifest = readJson(join(outDir, "redacted", "manifest.json"));
   assert.ok(manifest.requests.length > 10);
   for (const r of manifest.requests) assert.equal(typeof r.ms, "number");
   const sum = manifest.requests.reduce((a, r) => a + r.ms, 0);
-  assert.ok(manifest.round.ms >= sum);
+  assert.ok(manifest.timing.totalMs >= sum);
+  assert.ok(manifest.timing.dataRoundMs > 0);
+  assert.ok(manifest.timing.dataRoundMs < manifest.timing.totalMs);
 });
 
 test("the allowlist refuses anything that writes or controls the router", () => {

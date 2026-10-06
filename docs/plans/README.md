@@ -8,4 +8,4 @@ One short plan per feature or issue, written before the code. Start from
 
 | Plan | Status |
 |---|---|
-| [capture-fixtures.md](./capture-fixtures.md) | Planned |
+| [capture-fixtures.md](./capture-fixtures.md) | Built, awaiting a run on real hardware |

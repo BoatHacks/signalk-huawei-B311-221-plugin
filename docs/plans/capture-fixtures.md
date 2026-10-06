@@ -147,18 +147,18 @@ No live tests, since there is no device in CI.
 
 ## Implementation Steps
 
-- [ ] Write redaction tests, then `scripts/redact.mjs`
-- [ ] Write login-hash known-answer tests, then the hashing helpers
-- [ ] Write mock-router flow tests
-- [ ] Write `scripts/capture-fixtures.mjs` (token discovery,
+- [x] Write redaction tests, then `scripts/redact.mjs`
+- [x] Write login-hash known-answer tests, then the hashing helpers
+- [x] Write mock-router flow tests
+- [x] Write `scripts/capture-fixtures.mjs` (token discovery,
       `state-login`, optional single login, allowlisted capture, logout)
-- [ ] Record per-request and per-round timings in `manifest.json`
-- [ ] Add `--repeat/--interval`, `--no-login`, `--skip-sms`, `--keep-raw`
-- [ ] Add `capture-out/` to `.gitignore`; add `scripts/README.md` with
+- [x] Record per-request timings, `dataRoundMs` and `totalMs` in `manifest.json`
+- [x] Add `--repeat/--interval`, `--no-login`, `--skip-sms`, `--keep-raw`
+- [x] Add `capture-out/` to `.gitignore`; add `scripts/README.md` with
       the run instructions and what to send back
-- [ ] Dry-run against the mock router, then review the output by eye
-- [ ] You run it on the boat LAN; review the redacted output before
-      sharing
+- [x] Dry-run against the mock router, then review the output by eye
+- [ ] Run it against the real router (session with hardware access);
+      review the redacted output before sharing
 - [ ] Copy reviewed files to `test/fixtures/`; update SPEC §13.1 and
       ARCHITECTURE §5.1 with the verified field names and login mode
 
@@ -171,6 +171,16 @@ No live tests, since there is no device in CI.
   `test/capture-flow.test.mjs` (new)
 - `.gitignore` (new: `capture-out/`, `node_modules/`)
 - later: `test/fixtures/*.xml`, SPEC.md §13, ARCHITECTURE.md §5.1
+
+## Status
+
+Built and tested against a mock router. Safety properties were checked by
+mutation (login retried, logout skipped, allowlist opened, raw output
+written, IMEI left unredacted): the tests fail for each. **Not yet run
+against a real router.** Redaction rules and the field names they assume
+(`Phone`, `Content`, `Imei`, `WanIPAddress`, ...) come from the
+library's code and general knowledge of these routers, so the first real
+capture may show fields the rules miss; the leak scan is the safety net.
 
 ## Decisions
 

@@ -27,7 +27,10 @@ test("password_type 3 follows the reference client and uses base64", () => {
 });
 
 test("an unknown password_type is refused rather than guessed", () => {
-  assert.throws(() => encodePassword(9, "admin", "secret", "tok"), /password_type/);
+  assert.throws(
+    () => encodePassword(9, "admin", "secret", "tok"),
+    /password_type/,
+  );
 });
 
 test("an empty password encodes to an empty string", () => {

@@ -40,15 +40,23 @@ const DATA = {
   "monitoring/traffic-statistics": xml(
     "<CurrentUpload>123456789012</CurrentUpload><TotalDownload>9876543210</TotalDownload>",
   ),
-  "monitoring/month_statistics": xml("<CurrentMonthDownload>5555555555</CurrentMonthDownload>"),
+  "monitoring/month_statistics": xml(
+    "<CurrentMonthDownload>5555555555</CurrentMonthDownload>",
+  ),
   "monitoring/start_date": xml("<StartDay>1</StartDay>"),
-  "sms/sms-count": xml("<LocalInbox>1</LocalInbox><LocalUnread>1</LocalUnread>"),
+  "sms/sms-count": xml(
+    "<LocalInbox>1</LocalInbox><LocalUnread>1</LocalUnread>",
+  ),
   "sms/sms-list": xml(
     `<Count>1</Count><Messages><Message><Smstat>0</Smstat><Index>40001</Index><Phone>${SENSITIVE.phone}</Phone><Content>${SENSITIVE.smsText}</Content><Date>2023-10-06 12:00:00</Date></Message></Messages>`,
   ),
   "sms/sms-feature-switch": xml("<sms_save_enable>1</sms_save_enable>"),
 };
-const OPEN = new Set(["user/state-login", "webserver/token", "webserver/SesTokInfo"]);
+const OPEN = new Set([
+  "user/state-login",
+  "webserver/token",
+  "webserver/SesTokInfo",
+]);
 
 /**
  * A tiny stand-in for the router's web API. Records every call so tests can
@@ -96,7 +104,10 @@ export async function startMockRouter(opts = {}) {
         return send(
           200,
           `<html><head><meta name="csrf_token" content="${token}"/></head><body>page</body></html>`,
-          { "Content-Type": "text/html", "Set-Cookie": `SessionID=${COOKIE}; path=/` },
+          {
+            "Content-Type": "text/html",
+            "Set-Cookie": `SessionID=${COOKIE}; path=/`,
+          },
         );
       }
       const ep = url.pathname.replace(/^\/api\//, "");
@@ -113,9 +124,11 @@ export async function startMockRouter(opts = {}) {
           ),
         );
       }
-      if (ep === "webserver/token") return send(200, xml(`<token>${TOKENS.home}</token>`));
+      if (ep === "webserver/token")
+        return send(200, xml(`<token>${TOKENS.home}</token>`));
       if (ep === "user/login" && req.method === "POST") {
-        const field = (n) => new RegExp(`<${n}>([^<]*)</${n}>`).exec(body)?.[1] ?? "";
+        const field = (n) =>
+          new RegExp(`<${n}>([^<]*)</${n}>`).exec(body)?.[1] ?? "";
         const expected = encodePassword(
           o.passwordType,
           o.username,
@@ -129,7 +142,9 @@ export async function startMockRouter(opts = {}) {
           field("Password") === expected;
         if (!ok) return send(200, errorXml(108006));
         loggedIn = true;
-        return send(200, xml("OK"), { __RequestVerificationToken: TOKENS.afterLogin });
+        return send(200, xml("OK"), {
+          __RequestVerificationToken: TOKENS.afterLogin,
+        });
       }
       if (ep === "user/logout" && req.method === "POST") {
         loggedIn = false;

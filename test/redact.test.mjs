@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { redactCsrfMeta, redactXml, scanLeaks } from "../scripts/redact.mjs";
 
-const wrap = (inner) => `<?xml version="1.0" encoding="UTF-8"?><response>${inner}</response>`;
+const wrap = (inner) =>
+  `<?xml version="1.0" encoding="UTF-8"?><response>${inner}</response>`;
 const skeleton = (xml) => xml.replace(/>[^<]*</g, "><");
 
 test("phone numbers keep their shape but lose their digits", () => {
   const { text, counts } = redactXml(
-    wrap("<Phones><Phone>+49 170 1234567</Phone></Phones><Sca>+491760000443</Sca>"),
+    wrap(
+      "<Phones><Phone>+49 170 1234567</Phone></Phones><Sca>+491760000443</Sca>",
+    ),
   );
   assert.ok(text.includes("<Phone>+00 000 0000000</Phone>"));
   assert.ok(text.includes("<Sca>+000000000000</Sca>"));
@@ -49,7 +52,9 @@ test("serial number becomes X of the same length", () => {
 
 test("MAC addresses keep their separator style", () => {
   const { text, counts } = redactXml(
-    wrap("<MacAddress1>AA:BB:CC:11:22:33</MacAddress1><MacAddress2>aa-bb-cc-11-22-33</MacAddress2>"),
+    wrap(
+      "<MacAddress1>AA:BB:CC:11:22:33</MacAddress1><MacAddress2>aa-bb-cc-11-22-33</MacAddress2>",
+    ),
   );
   assert.ok(text.includes("<MacAddress1>00:00:00:00:00:00</MacAddress1>"));
   assert.ok(text.includes("<MacAddress2>00-00-00-00-00-00</MacAddress2>"));
@@ -108,7 +113,7 @@ test("counters, timestamps and signal values are untouched", () => {
 
 test("phone numbers hiding in unnamed elements are still caught", () => {
   const { text } = redactXml(wrap("<Note>call +4917012345678 now</Note>"));
-  assert.ok(text.includes("<Note>call +00000000000000 now</Note>"));
+  assert.ok(text.includes("<Note>call +0000000000000 now</Note>"));
 });
 
 test("redaction preserves the element structure", () => {
@@ -150,10 +155,19 @@ test("leak scan flags raw sensitive data by kind without echoing it", () => {
   );
   const findings = scanLeaks(raw);
   for (const kind of ["imei", "mac", "ip", "phone", "hex"]) {
-    assert.ok(findings.some((f) => f.includes(kind)), `missing ${kind}: ${findings}`);
+    assert.ok(
+      findings.some((f) => f.includes(kind)),
+      `missing ${kind}: ${findings}`,
+    );
   }
   const joined = findings.join("\n");
-  for (const secret of ["356938035643809", "AA:BB:CC", "100.75.91.205", "491701234567", "0123456789abcdef"]) {
+  for (const secret of [
+    "356938035643809",
+    "AA:BB:CC",
+    "100.75.91.205",
+    "491701234567",
+    "0123456789abcdef",
+  ]) {
     assert.ok(!joined.includes(secret), `finding echoed ${secret}`);
   }
 });
