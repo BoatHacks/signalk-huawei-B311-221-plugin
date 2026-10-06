@@ -267,8 +267,8 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 - Multiple routers (one router is enough for a boat; revisit on demand).
 - Router control (reconnect, reboot, band lock). Higher risk, not asked
   for.
-- SignalK PUT handler for SMS send: more surface, needs a recipient
-  allowlist. REST was chosen first.
+- SignalK PUT handler for SMS send: more surface and a second
+  permission path to get right. REST was chosen first.
 - Other Huawei models.
 
 ## 11. References
