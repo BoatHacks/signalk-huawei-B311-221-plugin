@@ -1,0 +1,39 @@
+{
+  "name": "signalk-huawei-b311-221",
+  "version": "0.0.0",
+  "description": "Signal K plugin for the Huawei B311-221 LTE router: signal, connection, data plan and SMS",
+  "main": "dist/index.js",
+  "type": "module",
+  "files": [
+    "dist/",
+    "public/",
+    "status-tiles-examples.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "format": "biome check --write src test scripts",
+    "lint": "biome check src test scripts",
+    "test": "node --test --test-force-exit \"test/*.test.ts\" \"test/*.test.mjs\"",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "signalk-node-server-plugin",
+    "signalk-category-hardware",
+    "signalk-webapp",
+    "huawei",
+    "lte"
+  ],
+  "signalk": {
+    "displayName": "Huawei B311-221 LTE"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@signalk/server-api": "^2.30.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
+  }
+}

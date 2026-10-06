@@ -8,8 +8,11 @@ personal, and writes files that become `test/fixtures/` for the
 RouterClient and parsers. It also answers the questions that block the
 design: which `password_type` and `rsapadingtype` the firmware reports,
 and what the signal, status, traffic and SMS fields are actually called.
-This cloud environment cannot reach the router, so the script has to be
-run by you.
+This cloud environment cannot reach the router, so the script is run by
+a separate session that has direct access to the live hardware. Because
+that session runs the script and hands back the results, no manual
+delivery step is needed, but redaction still applies to anything that is
+committed.
 
 ## Relevant SPEC/ARCHITECTURE Sections
 
@@ -43,10 +46,15 @@ endpoint.
 4. Capture the allowlisted endpoints (below), each saved as the raw
    response body plus a small header record (status, content type, the
    rotated token header names, **not** token values or cookies).
-5. Optional `--repeat N --interval S`: re-capture `device/signal`,
-   `monitoring/status` and `monitoring/traffic-statistics` N times,
-   to show how values and unit suffixes vary and how the traffic
-   counters move.
+5. **One update round by default.** The script records the duration of
+   every request and of the whole round (all endpoints, in sequence), in
+   `manifest.json`. That is the number we need to set realistic polling
+   intervals: the plugin will update continuously in the background, so
+   what matters is how long one round takes and whether the router copes
+   with the rounds back to back. Optional `--repeat N --interval S`
+   re-captures `device/signal`, `monitoring/status` and
+   `monitoring/traffic-statistics` N times to show how values and unit
+   suffixes vary and how the traffic counters move; it is off by default.
 6. Log out, always, including after an error.
 
 **Endpoint allowlist**
@@ -144,6 +152,7 @@ No live tests, since there is no device in CI.
 - [ ] Write mock-router flow tests
 - [ ] Write `scripts/capture-fixtures.mjs` (token discovery,
       `state-login`, optional single login, allowlisted capture, logout)
+- [ ] Record per-request and per-round timings in `manifest.json`
 - [ ] Add `--repeat/--interval`, `--no-login`, `--skip-sms`, `--keep-raw`
 - [ ] Add `capture-out/` to `.gitignore`; add `scripts/README.md` with
       the run instructions and what to send back
@@ -163,9 +172,8 @@ No live tests, since there is no device in CI.
 - `.gitignore` (new: `capture-out/`, `node_modules/`)
 - later: `test/fixtures/*.xml`, SPEC.md §13, ARCHITECTURE.md §5.1
 
-## Open questions for this plan
+## Decisions
 
-- How do you want to send the redacted capture back: paste into chat, or
-  commit the `redacted/` directory to a branch yourself?
-- Do you want the optional repeated sampling on by default (say 3
-  samples, 30 s apart) so one run shows variability?
+- Delivery: the session with hardware access runs the script and commits
+  or passes on the redacted output; no paste step.
+- Sampling: single round by default, with timings; `--repeat` optional.
