@@ -16,7 +16,7 @@ Foundation
 Independent modules (written by parallel subagents, integrated by the lead)
 - [x] A. UsageTracker: plan periods, counter resets, thresholds (`src/usage-tracker.ts`)
 - [x] B. Publisher: path table, `meta`, radioQuality, notifications (`src/publisher.ts`, `src/paths.ts`, `src/radio-quality.ts`)
-- [ ] C. RouterClient and parsers against the mock router (`src/router-client.ts`, `src/parsers.ts`)
+- [x] C. RouterClient and parsers against the mock router (`src/router-client.ts`, `src/parsers.ts`)
 - [x] D. Status Tiles example set and provider (`src/tiles-provider.ts`, `status-tiles-examples.json`)
 - [x] E. SmsStore and persistent StateStore (`src/sms-store.ts`, `src/state-store.ts`)
 - [x] F. Webapp (`public/`)
@@ -37,3 +37,4 @@ Blocked on the user or hardware
 - 2026-10-06: foundation done; subagents A-F started.
 - 2026-10-06: A, B, D, E, F, G, H, I done and committed (see git log). Agent C (RouterClient) still running when last checked. Next: integrate C, then J (plugin wiring + end-to-end test), K, L. Note for wiring: publish routerLink/sms/plan paths on every poll (tile stale times), call stateStore.flush() on stop, build SMS ids with smsId() from src/sms-id.ts, XML-escape SMS text in the client.
 - 2026-10-06 23:15: running alone. Each resumed run must append a line to the log table in `docs/TIME_AND_TOKENS.md` (time, work, `get_session` usage at the end, difference from the previous line) and add any subagent token totals to its table.
+- 2026-10-06 23:20: C done and verified (279 tests green). Next: J plugin wiring per docs/plans/plugin-wiring.md, then K, L.

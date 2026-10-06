@@ -37,8 +37,8 @@ durations overlap and must not be added to wall-clock time.
 | Status Tiles set and provider | 99,691 | 1 min 47 s |
 | Publisher, paths, radioQuality | 89,615 | 2 min 10 s |
 | Webapp (with screenshots) | 94,169 | 3 min 35 s |
-| RouterClient and parsers | pending (still running) | pending |
-| **Subtotal, finished** | **415,388** | **10 min 35 s of agent time** |
+| RouterClient and parsers | 169,865 | 7 min 39 s |
+| **Subtotal** | **585,253** | **18 min 14 s of agent time** |
 
 ## Rate limit
 
