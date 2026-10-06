@@ -111,7 +111,8 @@ Under `networking.cellular.` (proposed):
 
 | Path | Content |
 |---|---|
-| `signal.rsrp`, `signal.rsrq`, `signal.sinr`, `signal.rssi` | dBm / dB values, each with `meta` (units, displayName, `zones`) |
+| `signal.rsrp`, `signal.rssi` | Received power in **W** (SI), converted from the router's dBm, with `meta` (§6.4) |
+| `signal.rsrq`, `signal.sinr` | Dimensionless power **ratio** (SI), converted from the router's dB, with `meta` (§6.4) |
 | `signal.bars` | 0-5 |
 | `network.type`, `network.band`, `network.operator`, `network.roaming`, `network.cellId` | strings / booleans |
 | `connection.state`, `connection.wanIp`, `connection.uptime` | connection status |
@@ -127,8 +128,10 @@ message).
 
 ### 6.2 REST API (under `/plugins/signalk-huawei-b311-221/`)
 
-All routes use the Signal K server's authentication. Write routes
-require an authenticated admin or read-write user.
+All routes use the Signal K server's authentication. **Sending, deleting
+and marking SMS, and resetting the plan, require admin rights.** Read
+routes (`GET /status`, `GET /sms`) require any authenticated user, or
+none if the server runs without security.
 
 | Route | Purpose |
 |---|---|
@@ -150,6 +153,29 @@ require an authenticated admin or read-write user.
    connection, Data plan, SMS. Tiles must degrade to neutral/stale, not
    green, when the plugin is not running.
 
+### 6.4 SI conversion and conversion metadata
+
+Signal K stores SI units, so the plugin converts the router's
+logarithmic values before publishing:
+
+- dBm → watts: `W = 10^(dBm/10) / 1000` (RSRP, RSSI)
+- dB → linear ratio: `ratio = 10^(dB/10)` (RSRQ, SINR)
+
+Every converted path carries `meta` that lets a reader recover the
+original value:
+
+- `units`: `W` or `ratio`
+- `displayName` and `description` stating the original unit, e.g.
+  "RSRP (originally dBm)"
+- a plugin-defined `conversion` object:
+  `{ "from": "dBm", "to": "W", "formula": "W = 10^(dBm/10)/1000", "inverse": "dBm = 10*log10(W*1000)" }`
+- `zones` expressed in the converted SI values, so `zone` checks in
+  Status Tiles work without conversion on their side.
+
+The webapp converts back to dBm / dB for display. Whether the server
+passes the custom `conversion` key through unchanged is to be verified
+(§13.3).
+
 ## 7. User Interface
 
 An embedded webapp, listed in the Signal K server's webapps, shows:
@@ -158,10 +184,25 @@ An embedded webapp, listed in the Signal K server's webapps, shows:
 - Data plan gauge (used / remaining / days to reset).
 - SMS inbox and a compose form.
 
-Constraints: must work on a phone-sized screen over the boat LAN, must
-work offline from the internet (no CDN assets), and must follow the
-Signal K light/dark behaviour if available. Settings live in the
-standard plugin config form, not in the webapp.
+Style: visually consistent with the Status Tiles webapp, which uses
+the Signal K plugin UI spec theme. Concretely:
+
+- Dark base in both modes, never a white mode. Pure black page
+  background with slightly lighter panels.
+- Day/night mode applied as `data-mode` on `<html>`, driven by the
+  server's `environment.mode` value, with the same semantic colour
+  custom properties (green, teal, orange, red, grey) at day and night
+  intensity. Status colours here map to signal and plan health.
+- Flat panels: no border radius, no shadows. `system-ui` for text and a
+  monospace face for numeric readouts.
+- Plain vanilla web components and ES modules, as Status Tiles does.
+
+Constraints: must work on a phone-sized screen over the boat LAN.
+**No dependency may need the internet.** All code, fonts and icons are
+vendored in `public/`; no CDN, no remote fonts, no external requests.
+If a third-party library is ever needed it is copied into the repo with
+its licence. Settings live in the standard plugin config form, not in
+the webapp.
 
 ## 8. Persistence
 
@@ -184,7 +225,7 @@ Via the standard plugin JSON-schema form.
 | Plan size, reset day of month | none: plan tracking disabled until set |
 | Plan warn / alarm thresholds | 80 % / 95 % |
 | Notify on new SMS | on |
-| Signal-quality notification thresholds (RSRP, SINR) | derived from the zones in §6.3 |
+| Signal-quality notification thresholds (RSRP, SINR) | derived from the zones in §6.4 |
 
 ## 10. MVP Scope
 
@@ -233,6 +274,14 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
   This is how Status Tiles is designed; users own their config.
 - **SMS send over REST, not PUT.** Narrower, auditable surface; PUT can
   follow later with an allowlist.
+- **SMS write actions are admin-only.** Sending spends money and can
+  message anyone; admin is the narrowest existing role.
+- **SI conversion with conversion info in `meta`.** Keeps the data
+  Signal K-conformant while letting consumers and the webapp recover
+  dBm/dB.
+- **Webapp mirrors Status Tiles' look, vanilla and fully vendored.**
+  Matches the display the user already has on the boat, and works with
+  no internet.
 - **No zeroing of paths on outage.** Stale timestamps are the truthful
   signal.
 
@@ -244,11 +293,7 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 2. **Path naming**: does `networking.cellular.*` collide with or
    duplicate an existing convention or plugin? Check the spec and the
    plugin registry before fixing names.
-3. **Units**: Signal K prefers SI. dBm/dB values are logarithmic;
-   decide whether to publish as-is with meta units or convert.
-4. **SMS permissions**: should send require admin, or any read-write
-   user? Should numbers be allowlisted from day one?
+3. **Conversion metadata**: confirm the server preserves a custom `conversion` key in `meta`, and that SI watts for RSRP are handled sanely by common clients; fall back to `description` only if not.
+4. **SMS allowlist**: admin-only is decided; is a recipient allowlist still wanted on top?
 5. **Prior art**: is there an existing Huawei LTE SignalK plugin worth
    building on or mirroring? Not yet searched.
-6. **Webapp stack**: framework-free vs. a small framework, given the
-   offline and size constraints.

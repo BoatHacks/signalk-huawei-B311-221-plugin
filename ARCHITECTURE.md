@@ -58,7 +58,9 @@ mark-read through RouterClient.
 ### 2.5 Publisher
 The only module that talks to the Signal K app object for output:
 `handleMessage` deltas, `meta` deltas (units, displayName, zones),
-notification set/clear. Maps domain objects to paths from SPEC §6.1.
+notification set/clear. Maps domain objects to paths from SPEC §6.1 and performs the dBm→W /
+dB→ratio conversion with its `meta` (SPEC §6.4) in one small `units`
+module, so conversion and its inverse are tested together.
 
 ### 2.6 HTTP routes
 Registered through the plugin's `registerWithRouter`. Thin handlers over
@@ -71,8 +73,14 @@ read-only, returning the set from `status-tiles-examples.json`. Mirrors
 the pattern in signalk-status-tiles's `index.js`.
 
 ### 2.8 Webapp
-Static files in `public/`, calling the REST routes. No build step in v0.1
-if it can be avoided (see SPEC §13.6).
+Static files in `public/`, calling the REST routes. Vanilla ES modules
+and web components with shadow DOM, mirroring signalk-status-tiles: CSS
+custom properties on `:root` (dark base, `data-mode` day/night set from
+the `environment.mode` delta), flat panels, `system-ui` plus monospace.
+No build step, no framework, and **no network dependencies**: every
+asset is vendored in `public/`. A test greps `public/` for `http(s)://`
+references to enforce this. The webapp converts SI signal values back to
+dBm/dB for display using the `conversion` meta (SPEC §6.4).
 
 ## 3. Data Models
 
@@ -89,7 +97,7 @@ Shapes follow SPEC §4. TypeScript types (or JSDoc typedefs) in
 | XML | small parser dependency (e.g. `fast-xml-parser`) | Router speaks XML; avoid hand-rolled parsing |
 | Tests | `node:test`, recorded XML fixtures | No framework dependency |
 | Lint/format | Biome | Same as the Status Tiles plugin |
-| Webapp | static HTML/JS | Offline, small |
+| Webapp | vanilla ES modules + web components, vendored | Matches Status Tiles; offline-safe, no build |
 
 ## 5. Integration Points
 
@@ -105,8 +113,9 @@ Shapes follow SPEC §4. TypeScript types (or JSDoc typedefs) in
 
 - **Router credentials** are in the plugin config on the server. They are
   never logged and never returned by any REST route.
-- **Routes** rely on the Signal K server's authentication; `POST`/`DELETE`
-  require write access.
+- **Routes** rely on the Signal K server's authentication. Reads need an
+  authenticated user; SMS send/delete/mark-read and plan reset check for
+  an admin user in the handler and return 403 otherwise.
 - **SMS send** validates the number (E.164-ish) and text length, and
   rate limits sends, since this spends real money and can message anyone.
 - **Router TLS**: the router speaks plain HTTP on the LAN. The plugin
