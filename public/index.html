@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="day">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Huawei B311</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <style>
+      /* Signal K plugin UI theme, same custom properties as Status Tiles:
+         dark base in both modes, day brighter, night dimmed. app.js sets
+         data-mode from environment.mode. */
+      :root {
+        color-scheme: dark;
+        --bg-base: #000000;
+        --bg-panel: #111414;
+        --bg-panel-muted: #0a0c0c;
+      }
+      :root,
+      :root[data-mode="day"] {
+        --color-green: #8dfcbb;
+        --color-green-rgb: 141, 252, 187;
+        --color-teal: #66c6db;
+        --color-teal-rgb: 102, 198, 219;
+        --color-orange: #fca847;
+        --color-orange-rgb: 252, 168, 71;
+        --color-red: #ff5e5e;
+        --color-red-rgb: 255, 94, 94;
+        --color-grey: #666666;
+        --color-grey-rgb: 102, 102, 102;
+        --text-main: #ffffff;
+        --text-muted: #a0a0b5;
+      }
+      :root[data-mode="night"] {
+        --color-green: #4a7555;
+        --color-green-rgb: 74, 117, 85;
+        --color-teal: #33616b;
+        --color-teal-rgb: 51, 97, 107;
+        --color-orange: #8a5318;
+        --color-orange-rgb: 138, 83, 24;
+        --color-red: #8f3333;
+        --color-red-rgb: 143, 51, 51;
+        --color-grey: #333333;
+        --color-grey-rgb: 51, 51, 51;
+        --text-main: #c4c4c4;
+        --text-muted: #666677;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg-base); }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        color: var(--text-main);
+      }
+      lte-app { display: block; min-height: 100vh; }
+    </style>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <lte-app></lte-app>
+    <noscript>This page needs JavaScript.</noscript>
+  </body>
+</html>
