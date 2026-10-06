@@ -87,6 +87,16 @@ dBm/dB for display using the `conversion` meta (SPEC §6.4).
 Shapes follow SPEC §4. TypeScript types (or JSDoc typedefs) in
 `src/types`, shared by the client, pollers and publisher.
 
+### 3.1 `radioQuality`
+
+`networking.lte.radioQuality` (0-1) is the quality figure other LTE
+plugins also publish; here it is computed from RSRP and SINR in dB:
+each mapped linearly onto 0-1 between a poor and a good anchor
+(RSRP -120..-80 dBm, SINR 0..20 dB, clamped), then the lower of the two
+is used, since either one being bad makes the link bad. The anchors are
+the same ones used for the `zones` in `meta`, so tiles and the number
+agree. Exact anchors are tunable constants in one file.
+
 ## 4. Technology Stack
 
 | Area | Choice | Why |

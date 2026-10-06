@@ -104,27 +104,45 @@ timestamps going stale is the signal consumers (and Status Tiles) use.
 
 ## 6. API Specification
 
-### 6.1 Signal K paths *(naming to verify against the spec and
-existing plugins, see §13)*
+### 6.1 Signal K paths
 
-Under `networking.cellular.` (proposed):
+**Path choice.** The Signal K schema (`@signalk/signalk-schema` 1.8.2)
+defines no `networking`, `cellular` or `lte` keys, so there is no
+official path to follow. The de facto convention among existing LTE
+plugins is `networking.lte.*`
+([signalk-netgear-lte-status](https://github.com/sbender9/signalk-netgear-lte-status),
+[signalk-teltonika-rutx11](https://github.com/meri-imperiumi/signalk-teltonika-rutx11)),
+and [signalk-internet](https://github.com/meri-imperiumi/signalk-internet)
+consumes `networking.lte.connectionText` from such plugins. The one
+outlier, signalk-openwrt, uses `environment.outside.cellular.<index>.*`.
+This plugin follows the majority: **`networking.lte.*`**, reusing
+existing leaf names wherever the meaning matches, so dashboards and
+consumers written for those plugins keep working. New names are used
+only where no precedent exists.
 
-| Path | Content |
-|---|---|
-| `signal.rsrp`, `signal.rssi` | Received power in **W** (SI), converted from the router's dBm, with `meta` (§6.4) |
-| `signal.rsrq`, `signal.sinr` | Dimensionless power **ratio** (SI), converted from the router's dB, with `meta` (§6.4) |
-| `signal.bars` | 0-5 |
-| `network.type`, `network.band`, `network.operator`, `network.roaming`, `network.cellId` | strings / booleans |
-| `connection.state`, `connection.wanIp`, `connection.uptime` | connection status |
-| `link` | plugin↔router state (§3.1) |
-| `usage.plan.totalBytes`, `.usedBytes`, `.remainingBytes`, `.usedRatio`, `.periodEnd` | plugin-tracked plan |
-| `usage.router.up`, `usage.router.down` | router-reported counters |
-| `sms.unread`, `sms.lastReceived` | SMS summary |
+| Path | Content | Precedent |
+|---|---|---|
+| `networking.lte.rssi`, `networking.lte.rsrp` | Received power in **W** (SI), converted from dBm, with `meta` (§6.4) | `rssi` (dBm there) |
+| `networking.lte.rsrq`, `networking.lte.sinr` | Power **ratio** (SI), converted from dB, with `meta` (§6.4) | new (openwrt has `rsrq`, `snr` in dB) |
+| `networking.lte.bars` | 0-5 | netgear, teltonika |
+| `networking.lte.radioQuality` | ratio 0-1, derived from RSRP and SINR (formula in ARCHITECTURE) | netgear, teltonika |
+| `networking.lte.connectionType` | `LTE`, `LTE-A`, … | netgear |
+| `networking.lte.registerNetworkDisplay` | Operator name | netgear, teltonika |
+| `networking.lte.connectionText` | See §13.2 | netgear, teltonika, signalk-internet |
+| `networking.lte.curBand`, `networking.lte.cellId` | Band, cell ID | netgear |
+| `networking.lte.pci`, `networking.lte.roaming` | Physical cell ID, roaming flag | new |
+| `networking.wan.ip` | WAN IP address | teltonika |
+| `networking.modem.uptime` | Router uptime, seconds | teltonika |
+| `networking.lte.usage.rx`, `networking.lte.usage.tx` | Router-reported counters, bytes (`meta.units` `B`) | teltonika |
+| `networking.lte.plan.totalBytes`, `.usedBytes`, `.remainingBytes`, `.usedRatio`, `.periodEnd` | Plugin-tracked plan (§3.2) | new |
+| `networking.lte.lastMessage`, `networking.lte.lastMessageTime` | Latest received SMS text (truncated) and time | netgear |
+| `networking.lte.sms.unread` | Unread SMS count | new |
+| `networking.lte.routerLink` | Plugin↔router state (§3.1) | new |
 
-Notifications under `notifications.networking.cellular.*`:
-`plan` (warn/alarm at configured thresholds), `link` (unreachable / auth
-failed), `signal` (weak signal / no service / roaming), `sms.<id>` (new
-message).
+Notifications live under `notifications.networking.lte.*`: `plan`
+(warn/alarm at the configured thresholds), `link` (unreachable / auth
+failed), `signal` (weak signal / no service / roaming), `sms.<id>`
+(new message).
 
 ### 6.2 REST API (under `/plugins/signalk-huawei-b311-221/`)
 
@@ -259,7 +277,13 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
   (SPEC.md §3.3 check types, §6 output; `index.js` `statusTileExamples`
   provider and `status-tiles-examples.json` set format)
 - Signal K specification (notifications, meta/zones):
-  https://signalk.org/specification/
+  https://signalk.org/specification/ . Its schema package
+  (`@signalk/signalk-schema` 1.8.2) has no networking/LTE keys.
+- Path precedent: signalk-netgear-lte-status, signalk-teltonika-rutx11,
+  signalk-internet (consumer), signalk-openwrt (`environment.outside.cellular`
+  outlier), signalk-peplink-monitor (computes a signal quality scale from
+  RSSI/SINR/RSRP/RSRQ). Searched npm and the web: **no existing Huawei
+  LTE plugin was found.**
 - Community Huawei LTE API clients, for endpoint behaviour *(verify; to
   be chosen and cited once reviewed)*
 
@@ -273,7 +297,12 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 - **Tiles via `statusTileExamples` provider, not by pushing tiles.**
   This is how Status Tiles is designed; users own their config.
 - **SMS send over REST, not PUT.** Narrower, auditable surface; PUT can
-  follow later with an allowlist.
+  follow later.
+- **`networking.lte.*` over a new `networking.cellular.*`.** Matches
+  the existing plugins (netgear, teltonika) and what signalk-internet
+  reads; no official spec path exists to prefer instead.
+- **No SMS recipient allowlist.** Admin-only access is the control;
+  an allowlist was considered and declined.
 - **SMS write actions are admin-only.** Sending spends money and can
   message anyone; admin is the narrowest existing role.
 - **SI conversion with conversion info in `meta`.** Keeps the data
@@ -290,10 +319,17 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 1. **Exact router endpoints and login hashing** on the B311-221's
    firmware. Needs verification against a real device; none available
    in the design session.
-2. **Path naming**: does `networking.cellular.*` collide with or
-   duplicate an existing convention or plugin? Check the spec and the
-   plugin registry before fixing names.
+2. **`connectionText` meaning**: signalk-internet's README says it
+   carries the operator name, but signalk-teltonika-rutx11 puts the
+   network type there (`LTE`) and the operator in
+   `registerNetworkDisplay`. Pick one after reading signalk-internet's
+   code; the current plan is operator in `registerNetworkDisplay` and
+   network type in `connectionText` (Teltonika's usage), unless
+   signalk-internet's behaviour demands otherwise.
 3. **Conversion metadata**: confirm the server preserves a custom `conversion` key in `meta`, and that SI watts for RSRP are handled sanely by common clients; fall back to `description` only if not.
-4. **SMS allowlist**: admin-only is decided; is a recipient allowlist still wanted on top?
-5. **Prior art**: is there an existing Huawei LTE SignalK plugin worth
-   building on or mirroring? Not yet searched.
+4. **SI vs. existing plugins' dBm**: signalk-teltonika-rutx11
+   publishes `networking.lte.rssi` in dBm. This plugin publishes the
+   same path in W (decision: SI, §12). Two plugins on one path with
+   different units would confuse a server that has both. Acceptable
+   because a boat has one router, or should `rssi` stay in dBm for
+   compatibility and only the new paths be SI?
