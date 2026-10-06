@@ -87,6 +87,7 @@ export async function startMockRouter(opts = {}) {
     //  expireAfter     the session dies (error 100003) on the Nth authenticated
     //                  call, once. expireSession() does the same on demand.
     loginErrorCode: 108006,
+    rotateTokens: false,
     sms: null,
     sendStatus: null,
     sendSmsError: null,
@@ -112,14 +113,20 @@ export async function startMockRouter(opts = {}) {
     req.on("end", () => {
       const body = Buffer.concat(chunks).toString("utf8");
       const url = new URL(req.url, "http://x");
-      calls.push({
+      const entry = {
         method: req.method,
         path: url.pathname,
         body,
         cookie: req.headers.cookie ?? "",
         token: req.headers.__requestverificationtoken ?? "",
-      });
+      };
+      calls.push(entry);
       const send = (status, text, headers = {}) => {
+        const issued = o.rotateTokens ? `ROT-${calls.length}` : undefined;
+        if (issued) {
+          entry.issued = issued;
+          headers = { __RequestVerificationToken: issued, ...headers };
+        }
         res.writeHead(status, { "Content-Type": "text/xml", ...headers });
         res.end(text);
       };

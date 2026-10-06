@@ -275,3 +275,21 @@ test("pollNow runs a poll immediately without disturbing the schedule", async ()
   assert.deepEqual(h.calls, ["sms"]);
   await h.pollers.stop();
 });
+
+test("a busy router session is treated like an unreachable router: back off and retry, never halt", async () => {
+  let busy = true;
+  const h = harness({
+    signal: async () => {
+      if (busy)
+        throw named("SessionBusy", "another admin session is active (108003)");
+      return { rsrp: -90 };
+    },
+  });
+  h.pollers.start();
+  await h.timers.flush();
+  assert.deepEqual(h.links, ["connecting", "unreachable"]);
+  busy = false;
+  await h.timers.advance(20 * SEC);
+  assert.deepEqual(h.links, ["connecting", "unreachable", "ok"]);
+  await h.pollers.stop();
+});

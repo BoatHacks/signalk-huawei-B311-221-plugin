@@ -5,8 +5,10 @@ import {
   AuthFailed,
   BadResponse,
   InvalidRequest,
+  SessionBusy,
   Unreachable,
 } from "../src/errors.ts";
+import { formatRouterDate, routerDateToIso } from "../src/parsers.ts";
 import type { RouterClientOptions } from "../src/router-client.ts";
 import { chooseSmsMode, RouterClient } from "../src/router-client.ts";
 // @ts-expect-error plain-JS test helper without type declarations
@@ -155,7 +157,6 @@ test("login error codes map to reasons, and 108007 is a lockout", async () => {
   const expected: [number, string, boolean][] = [
     [108001, "username-wrong", false],
     [108002, "password-wrong", false],
-    [108003, "already-logged-in", false],
     [108006, "credentials-wrong", false],
     [108007, "lockout", true],
     [108004, "rejected", false],
@@ -603,7 +604,9 @@ test("sendSms stamps the Date from the injected clock", async () => {
     );
     assert.match(
       router.sent[0]?.raw ?? "",
-      /<Date>2024-02-03 04:05:06<\/Date>/,
+      new RegExp(
+        `<Date>${formatRouterDate(Date.UTC(2024, 1, 3, 4, 5, 6))}</Date>`,
+      ),
     );
   });
 });
@@ -824,3 +827,92 @@ function fakeRouter(
     urls,
   };
 }
+
+test("108003 (another session is logged in) is transient: not latched, and retried later", async () => {
+  await withRouter(
+    { failLogin: true, loginErrorCode: 108003 },
+    async (router, make) => {
+      const client = make();
+      await assert.rejects(
+        client.getSignal(),
+        (e: unknown) => e instanceof SessionBusy && !(e instanceof AuthFailed),
+      );
+      assert.equal(client.authFailed, false);
+      await assert.rejects(client.getSignal(), SessionBusy);
+      assert.equal(count(router, "POST", "/api/user/login"), 2);
+    },
+  );
+});
+
+test("only the newest tokens are kept, so a POST never sends a stale one", async () => {
+  await withRouter({ rotateTokens: true }, async (router, make) => {
+    const client = make();
+    for (let i = 0; i < 12; i += 1) await client.getSignal();
+    await client.sendSms("+1555", "hi");
+    const calls = router.calls as unknown as {
+      path: string;
+      token: string;
+      issued?: string;
+    }[];
+    const idx = calls.findIndex((c) => c.path === "/api/sms/send-sms");
+    assert.ok(idx > 0);
+    const previousIssued = calls[idx - 1]?.issued;
+    assert.ok(
+      previousIssued,
+      "the mock issued a token on the previous response",
+    );
+    assert.equal(calls[idx]?.token, previousIssued);
+  });
+});
+
+test("cesu8Fix returns the very same bytes when there is nothing to fix", () => {
+  const plain = new TextEncoder().encode("<response>hello wörld</response>");
+  assert.equal(cesu8Fix(plain), plain);
+});
+
+test("cesu8Encode of text without surrogates is plain UTF-8", () => {
+  const text = "Hello wörld € 123";
+  assert.deepEqual(
+    Array.from(cesu8Encode(text)),
+    Array.from(new TextEncoder().encode(text)),
+  );
+});
+
+test("sendSms stamps the Date in the server's local time, the way router dates are read", async () => {
+  const previous = process.env.TZ;
+  process.env.TZ = "Pacific/Auckland";
+  try {
+    const at = Date.UTC(2024, 1, 3, 4, 5, 6);
+    await withRouter({}, async (router, make) => {
+      await make({ now: () => at }).sendSms("+1555", "hi");
+      const expected = formatRouterDate(at);
+      assert.notEqual(
+        expected,
+        "2024-02-03 04:05:06",
+        "the zone really differs from UTC",
+      );
+      assert.match(
+        router.sent[0]?.raw ?? "",
+        new RegExp(`<Date>${expected}</Date>`),
+      );
+      assert.equal(routerDateToIso(expected), new Date(at).toISOString());
+    });
+  } finally {
+    if (previous === undefined) Reflect.deleteProperty(process.env, "TZ");
+    else process.env.TZ = previous;
+  }
+});
+
+test("impossible router dates are rejected instead of rolling over", () => {
+  for (const bad of [
+    "2024-13-45 25:61:61",
+    "2023-02-30 10:00:00",
+    "2024-04-31 00:00:00",
+    "2024-01-01 24:00:00",
+    "2024-01-01 12:60:00",
+  ]) {
+    assert.equal(routerDateToIso(bad), undefined, bad);
+  }
+  assert.ok(routerDateToIso("2024-02-29 12:30:45"));
+  assert.equal(routerDateToIso("2023-02-29 12:30:45"), undefined);
+});
