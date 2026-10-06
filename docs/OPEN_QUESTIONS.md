@@ -42,3 +42,4 @@ code and docs get updated.
 | Q5 | Are the tile stale times (D16) right for the real polling rates? Router link, plan and SMS paths must be re-emitted at least every 5 minutes | Publish these paths on every poll, not only on change | Tile accuracy |
 | Q6 | Are the send limits (D20) right for you, and should sending also work when server security is disabled (D19)? | Keep as is; turn on Signal K security if the boat network is shared | `src/routes.ts` |
 | Q7 | The webapp's phone layout clips the last SMS in the list box, and has no tabs | Fine for now; refine after seeing real use | `public/lib/styles.js` |
+| Q8 | What is "laserbrain timetracking" and where should token and time numbers go? I found no tool, skill or file by that name. | Keep `docs/TIME_AND_TOKENS.md` as the source of truth until you tell me the target and format; then export from it | Time and token reporting |
