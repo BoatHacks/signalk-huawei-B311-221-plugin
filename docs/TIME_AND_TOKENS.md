@@ -50,6 +50,7 @@ not need to match.
 | Snapshot (UTC) | Budget | Remaining | Consumed |
 |---|---|---|---|
 | 2026-10-06 23:24 | 15,000,000 | 14,930,849 | 69,151 |
+| 2026-10-06 23:31 | 15,000,000 | 14,878,256 | 121,744 |
 
 ## Rate limit
 
@@ -65,3 +66,4 @@ Each automatic resume appends one line: time (UTC), what ran, usage from
 | Time (UTC) | Work | Usage at end | Since last line |
 |---|---|---|---|
 | 2026-10-06 23:25 | Built the router client's review, plugin runtime, routes wiring, package checks, docs; went from supervised to running alone | counter unchanged from the first snapshot (89,836 in / 61,325 out); not updating mid-run | none visible |
+| 2026-10-06 23:35 | Independent code review of the whole branch (a forked review run; its own token use is not reported), then fixes for nine findings, test-first; docs, ledger; routine disabled | counter still unchanged (89,836 in / 61,325 out); wall clock 1 h 10 min since start | harness budget used 121,744 since start |

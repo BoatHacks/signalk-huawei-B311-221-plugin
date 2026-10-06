@@ -127,3 +127,18 @@ export function metricFraction(metric, value) {
   if (n === undefined || !r) return 0;
   return Math.min(1, Math.max(0, (n - r[0]) / (r[1] - r[0])));
 }
+
+/**
+ * How to report the answer to a send. `unknown` means the router took the
+ * message but never confirmed it went out, which must not read as success.
+ */
+export function sendOutcome(response) {
+  if (response?.status === "unknown") {
+    return {
+      kind: "warn",
+      message:
+        "The router accepted the message but did not confirm it was sent. Check before sending again.",
+    };
+  }
+  return { kind: "ok", message: "Message sent." };
+}

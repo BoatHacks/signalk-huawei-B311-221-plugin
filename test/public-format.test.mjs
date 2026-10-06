@@ -145,3 +145,21 @@ test("metricFraction maps ranges onto 0..1 and clamps", async () => {
   assert.equal(metricFraction("rsrp", undefined), 0);
   assert.equal(metricFraction("nope", 1), 0);
 });
+
+test("a send the router confirmed reads as sent", async () => {
+  const { sendOutcome } = await import("../public/lib/format.js");
+  for (const res of [{ ok: true, status: "sent" }, { ok: true }, undefined]) {
+    assert.deepEqual(sendOutcome(res), {
+      kind: "ok",
+      message: "Message sent.",
+    });
+  }
+});
+
+test("a send the router never confirmed is a warning that keeps the draft", async () => {
+  const { sendOutcome } = await import("../public/lib/format.js");
+  const out = sendOutcome({ ok: true, status: "unknown" });
+  assert.equal(out.kind, "warn");
+  assert.match(out.message, /not confirm/i);
+  assert.match(out.message, /before sending again/i);
+});

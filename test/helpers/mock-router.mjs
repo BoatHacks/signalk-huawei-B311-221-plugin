@@ -220,13 +220,13 @@ export async function startMockRouter(opts = {}) {
           ),
         );
       }
-      if (ep === "sms/set-read" && req.method === "POST") {
+      if (ep === "sms/set-read" && req.method === "POST" && o.sms) {
         const m = o.sms?.find((x) => x.index === Number(field(body, "Index")));
         if (!m) return send(200, errorXml(100002));
         m.stat = 1;
         return send(200, xml("OK"));
       }
-      if (ep === "sms/delete-sms" && req.method === "POST") {
+      if (ep === "sms/delete-sms" && req.method === "POST" && o.sms) {
         const i = o.sms?.findIndex(
           (x) => x.index === Number(field(body, "Index")),
         );

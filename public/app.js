@@ -1,7 +1,7 @@
 // Huawei B311 webapp: polls the plugin REST API and renders four panels.
 import { ApiError, api } from "./lib/api.js";
 import { el } from "./lib/dom.js";
-import { formatAge, isStale } from "./lib/format.js";
+import { formatAge, isStale, sendOutcome } from "./lib/format.js";
 import { startModePolling } from "./lib/mode.js";
 import "./lib/panels.js";
 import "./lib/sms-panel.js";
@@ -135,7 +135,10 @@ class LteApp extends HTMLElement {
 
   #handlers = {
     send: async (to, text) => {
-      const err = await this.#action(() => api.send(to, text));
+      let response;
+      const err = await this.#action(async () => {
+        response = await api.send(to, text);
+      });
       if (err) {
         this.#refs.sms.setResult(
           "err",
@@ -144,7 +147,8 @@ class LteApp extends HTMLElement {
             : `Send failed: ${err.message}`,
         );
       } else {
-        this.#refs.sms.setResult("ok", "Message sent.");
+        const outcome = sendOutcome(response);
+        this.#refs.sms.setResult(outcome.kind, outcome.message);
         this.#pollSms();
       }
       this.#render();

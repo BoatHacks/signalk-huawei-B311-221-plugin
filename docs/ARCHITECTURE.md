@@ -38,6 +38,12 @@ typed failures (`AuthFailed`, `Unreachable`, `BadResponse`). It is the
 only module that knows endpoint URLs or the router's response shapes.
 Depends on nothing else in the plugin.
 
+Typed errors: `AuthFailed` (login rejected, latched), `SessionBusy` (another
+admin session is open, transient), `Unreachable`, `BadResponse`,
+`InvalidRequest`. Before deleting or marking an SMS the runtime re-reads the
+router's list and refuses (409) if that message has changed, because the
+router reuses message indexes.
+
 ### 2.2 Pollers
 Three independent timers (signal/status, traffic, SMS) driving
 RouterClient calls. Requests are serialized through one queue so they

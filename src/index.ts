@@ -47,8 +47,8 @@ export default function createPlugin(
     },
     actions: {
       send: (to, text) => current().actions.send(to, text),
-      markRead: (index) => current().actions.markRead(index),
-      remove: (index) => current().actions.remove(index),
+      markRead: (m) => current().actions.markRead(m),
+      remove: (m) => current().actions.remove(m),
     },
     resetPlan: () => current().resetPlan(),
     isAdmin,

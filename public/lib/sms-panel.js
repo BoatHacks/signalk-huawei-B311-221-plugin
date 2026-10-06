@@ -22,7 +22,7 @@ const css = `
   .count { font-size: 0.85rem; color: var(--text-muted); }
   .count.warn { color: var(--color-orange); }
   .result { min-height: 1.2em; }
-  .result.err { color: var(--color-red); } .result.ok { color: var(--color-green); }
+  .result.err { color: var(--color-red); } .result.ok { color: var(--color-green); } .result.warn { color: var(--color-orange); }
 `;
 
 export class LteSms extends HTMLElement {

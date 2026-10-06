@@ -3,6 +3,7 @@ import type { Pollers, PollKind, Timers } from "./pollers.ts";
 import { createPollers } from "./pollers.ts";
 import type { Publisher } from "./publisher.ts";
 import { createPublisher } from "./publisher.ts";
+import type { RouterClientOptions } from "./router-client.ts";
 import { RouterClient } from "./router-client.ts";
 import type { Req, RoutesDeps } from "./routes.ts";
 import { SmsStore } from "./sms-store.ts";
@@ -36,6 +37,8 @@ export interface RuntimeOptions {
   timers?: Timers;
   now?: () => number;
   fetch?: typeof fetch;
+  /** Extra router client settings (timeouts, sleeping); for tests. */
+  clientOptions?: Partial<RouterClientOptions>;
 }
 
 export interface Runtime {
@@ -72,6 +75,7 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
     username: config.username,
     password: config.password,
     ...(opts.fetch ? { fetch: opts.fetch } : {}),
+    ...opts.clientOptions,
     log: (m: string) => app.debug(`router: ${m}`),
   });
 
@@ -86,6 +90,8 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
   let connection: ConnectionStatus | undefined;
   let serviceKey: string | undefined;
   let smsSeen = false;
+  // Messages we raised a notification for, so it can be cleared again.
+  const notified = new Set<string>();
 
   const smsSummary = () => {
     const latest = smsStore.list().find((m) => m.direction === "in");
@@ -100,6 +106,25 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
   const publishSms = () => {
     smsSeen = true;
     publisher.publishSms(smsSummary());
+  };
+
+  const clearNotification = (id: string) => {
+    if (notified.delete(id)) publisher.clearSmsNotification(id);
+  };
+
+  /**
+   * The router reuses message indexes after a deletion, and our list can be a
+   * poll interval old. Before acting on an index, make sure the router still
+   * has the very message the user clicked at that index.
+   */
+  const confirmUnchanged = async (msg: SmsMessage) => {
+    const fresh = await router.listSms({ limit: 50 });
+    if (!fresh.some((m) => m.id === msg.id && m.index === msg.index)) {
+      throw Object.assign(
+        new Error("That message changed on the router; refresh the list"),
+        { name: "Conflict" },
+      );
+    }
   };
 
   const saveUsage = () => {
@@ -158,14 +183,23 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
     onSms(messages: SmsMessage[]) {
       const result = smsStore.ingest(messages);
       publishSms();
+      // A notification ends when its message is read or gone from the router.
+      for (const id of [...notified]) {
+        const m = messages.find((x) => x.id === id);
+        if (!m || m.read) clearNotification(id);
+      }
       if (config.notifyNewSms) {
-        for (const m of result.newMessages) publisher.notifySms(m);
+        for (const m of result.newMessages) {
+          publisher.notifySms(m);
+          notified.add(m.id);
+        }
       }
     },
     onLink(state: LinkState, detail?: string) {
       link = state;
       publisher.publishRouterLink(state);
-      publisher.notifyLink(state);
+      // "connecting" says nothing yet; reporting it as a healthy link would be wrong.
+      if (state !== "connecting") publisher.notifyLink(state);
       if (state === "auth-failed") {
         const lockout = detail?.toLowerCase().includes("lockout");
         app.setPluginError(
@@ -174,7 +208,11 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
             : "The router rejected the login. Check the username and password; the plugin restarts when you save the settings.",
         );
       } else if (state === "unreachable") {
-        app.setPluginStatus("Router unreachable, retrying");
+        app.setPluginStatus(
+          detail?.includes("another admin session")
+            ? "The router has another admin session open (for example its own web page); retrying"
+            : "Router unreachable, retrying",
+        );
       } else if (state === "ok") {
         app.setPluginStatus("Connected to the router");
       } else {
@@ -236,11 +274,13 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
           list: () => smsStore.list(),
           markRead: (id) => {
             const ok = smsStore.markRead(id);
+            clearNotification(id);
             publishSms();
             return ok;
           },
           remove: (id) => {
             const ok = smsStore.remove(id);
+            clearNotification(id);
             publishSms();
             return ok;
           },
@@ -251,9 +291,16 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
             if (result.status === "failed")
               throw new Error("The router reported the message as not sent");
             void pollers?.pollNow("sms").catch(() => {});
+            return { status: result.status === "unknown" ? "unknown" : "sent" };
           },
-          markRead: (index) => router.markRead(index),
-          remove: (index) => router.deleteSms(index),
+          async markRead(msg) {
+            await confirmUnchanged(msg);
+            await router.markRead(msg.index);
+          },
+          async remove(msg) {
+            await confirmUnchanged(msg);
+            await router.deleteSms(msg.index);
+          },
         },
         resetPlan() {
           if (!tracker) return;

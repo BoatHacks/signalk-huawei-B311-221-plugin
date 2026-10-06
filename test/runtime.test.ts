@@ -368,7 +368,9 @@ const twoMessages = () =>
   );
 
 test("an SMS notification is cleared when the message is marked read", async () => {
-  const { router, extra, f, runtime } = await boot();
+  const { router, extra, f, runtime } = await boot({
+    extra: { "sms/set-read": xml("OK") },
+  });
   try {
     await runtime.start();
     await initialPollsDone(f);

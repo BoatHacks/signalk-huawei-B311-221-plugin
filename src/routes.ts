@@ -36,9 +36,14 @@ export interface RoutesDeps {
     remove(id: string): boolean;
   };
   actions: {
-    send(to: string, text: string): Promise<void>;
-    markRead(index: number): Promise<void>;
-    remove(index: number): Promise<void>;
+    /** `unknown` means the router took the message but never confirmed it. */
+    send(
+      to: string,
+      text: string,
+    ): Promise<{ status: "sent" | "unknown" } | void>;
+    /** Take the whole message so the action can check it still exists unchanged. */
+    markRead(message: SmsMessage): Promise<void>;
+    remove(message: SmsMessage): Promise<void>;
   };
   resetPlan(): void;
   isAdmin(req: Req): boolean;
@@ -131,6 +136,9 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
   const fail = (res: Res, e: unknown, what: string) => {
     if (e instanceof HttpError)
       return res.status(e.status).json({ error: e.message });
+    // The runtime found the message changed on the router since the list was shown.
+    if (e instanceof Error && e.name === "Conflict")
+      return res.status(409).json({ error: e.message });
     log(
       `${what} failed: ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`,
     );
@@ -180,8 +188,11 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
         throw new HttpError(429, "Too many messages; try again in a minute");
       }
       sends.push(t);
-      await deps.actions.send(to, text);
-      return res.json({ ok: true });
+      const result = await deps.actions.send(to, text);
+      return res.json({
+        ok: true,
+        status: (result && result.status) || "sent",
+      });
     }),
   );
 
@@ -189,7 +200,7 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
     "/sms/:id/read",
     admin("mark read", async (req, res) => {
       const msg = messageFor(req);
-      await deps.actions.markRead(msg.index);
+      await deps.actions.markRead(msg);
       deps.sms.markRead(msg.id);
       return res.json({ ok: true });
     }),
@@ -199,7 +210,7 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
     "/sms/:id",
     admin("delete sms", async (req, res) => {
       const msg = messageFor(req);
-      await deps.actions.remove(msg.index);
+      await deps.actions.remove(msg);
       deps.sms.remove(msg.id);
       return res.json({ ok: true });
     }),
