@@ -169,8 +169,6 @@ sender; the router speaks CESU-8 for characters outside the BMP.
 ```
 signalk-huawei-b311-221/
 ├── package.json
-├── SPEC.md
-├── ARCHITECTURE.md
 ├── src/
 │   ├── index.ts              plugin entry, lifecycle, config schema
 │   ├── router-client.ts
@@ -183,10 +181,15 @@ signalk-huawei-b311-221/
 │   └── types.ts
 ├── status-tiles-examples.json
 ├── public/                   webapp
+├── scripts/                  capture-fixtures.mjs, redact.mjs
 ├── test/
 │   ├── fixtures/             recorded router XML
 │   └── *.test.ts
-└── docs/plans/               per-feature plans and plan-template.md
+└── docs/
+    ├── SPEC.md
+    ├── ARCHITECTURE.md
+    ├── IMPLEMENTATION_CHECKLIST.md
+    └── plans/                per-feature plans and plan-template.md
 ```
 
 ## 8. Deployment
