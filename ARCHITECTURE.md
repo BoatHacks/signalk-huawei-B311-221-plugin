@@ -186,7 +186,7 @@ signalk-huawei-b311-221/
 ├── test/
 │   ├── fixtures/             recorded router XML
 │   └── *.test.ts
-└── docs/plans/               per-feature plans (if adopted)
+└── docs/plans/               per-feature plans and plan-template.md
 ```
 
 ## 8. Deployment
