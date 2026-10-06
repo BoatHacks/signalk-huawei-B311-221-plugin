@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC: hand-written, NOT recorded from a router. Field names are guesses (SPEC 13.1). -->
+<response><Count>1</Count><Messages><Message><Smstat>0</Smstat><Index>40001</Index><Phone>+15550100</Phone><Content>Hello &amp; welcome &lt;b&gt;</Content><Date>2023-10-06 12:00:00</Date><Sca></Sca></Message></Messages></response>

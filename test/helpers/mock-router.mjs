@@ -18,6 +18,8 @@ export const SENSITIVE = {
 
 const xml = (inner) =>
   `<?xml version="1.0" encoding="UTF-8"?><response>${inner}</response>`;
+const esc = (t) =>
+  String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const errorXml = (code) =>
   `<?xml version="1.0" encoding="UTF-8"?><error><code>${code}</code><message></message></error>`;
 
@@ -73,12 +75,36 @@ export async function startMockRouter(opts = {}) {
     destroy: [],
     redirect: [],
     extra: {},
+    // Additive options (used by the RouterClient tests):
+    //  loginErrorCode  error code for a rejected login (default 108006)
+    //  sms             array of { index, phone, content, date, stat } served by
+    //                  sms-list (with PageIndex/ReadCount paging), sms-count,
+    //                  set-read and delete-sms. Mutated by those calls.
+    //  sendStatus      array of XML bodies served in turn by sms/send-status
+    //                  (the last one repeats). Default: one in-progress answer,
+    //                  then success for the number that was sent.
+    //  sendSmsError    error code returned by sms/send-sms
+    //  expireAfter     the session dies (error 100003) on the Nth authenticated
+    //                  call, once. expireSession() does the same on demand.
+    loginErrorCode: 108006,
+    sms: null,
+    sendStatus: null,
+    sendSmsError: null,
+    expireAfter: null,
     ...opts,
   };
   const calls = [];
   const csrfFailed = new Set();
   let loggedIn = false;
   let homeHits = 0;
+  let authedCalls = 0;
+  let expired = false;
+  let sendPolls = 0;
+  const sent = [];
+  const field = (body, n) =>
+    new RegExp(`<${n}>([^<]*)</${n}>`).exec(body)?.[1] ?? "";
+  const unesc = (t) =>
+    t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 
   const server = http.createServer((req, res) => {
     const chunks = [];
@@ -140,7 +166,7 @@ export async function startMockRouter(opts = {}) {
           (req.headers.cookie ?? "").includes(COOKIE) &&
           field("Username") === o.username &&
           field("Password") === expected;
-        if (!ok) return send(200, errorXml(108006));
+        if (!ok) return send(200, errorXml(o.loginErrorCode));
         loggedIn = true;
         return send(200, xml("OK"), {
           __RequestVerificationToken: TOKENS.afterLogin,
@@ -152,10 +178,80 @@ export async function startMockRouter(opts = {}) {
       }
       if (OPEN.has(ep)) return send(200, xml(""));
       if (!loggedIn) return send(200, errorXml(100003));
+      authedCalls += 1;
+      if (o.expireAfter !== null && !expired && authedCalls >= o.expireAfter) {
+        expired = true;
+        loggedIn = false;
+        return send(200, errorXml(100003));
+      }
       if (o.unsupported.includes(ep)) return send(200, errorXml(100002));
       if (o.csrfFailOnce.includes(ep) && !csrfFailed.has(ep)) {
         csrfFailed.add(ep);
         return send(200, errorXml(125002));
+      }
+      if (o.sms && ep === "sms/sms-list" && req.method === "POST") {
+        const page = Number(field(body, "PageIndex")) || 1;
+        const size = Number(field(body, "ReadCount")) || 20;
+        const slice = o.sms.slice((page - 1) * size, page * size);
+        const items = slice
+          .map(
+            (m) =>
+              `<Message><Smstat>${m.stat ?? 0}</Smstat><Index>${m.index}</Index><Phone>${esc(m.phone)}</Phone><Content>${esc(m.content)}</Content><Date>${m.date}</Date></Message>`,
+          )
+          .join("");
+        return send(
+          200,
+          xml(`<Count>${slice.length}</Count><Messages>${items}</Messages>`),
+        );
+      }
+      if (o.sms && ep === "sms/sms-count") {
+        const unread = o.sms.filter((m) => (m.stat ?? 0) === 0).length;
+        return send(
+          200,
+          xml(
+            `<LocalInbox>${o.sms.length}</LocalInbox><LocalUnread>${unread}</LocalUnread>`,
+          ),
+        );
+      }
+      if (ep === "sms/set-read" && req.method === "POST") {
+        const m = o.sms?.find((x) => x.index === Number(field(body, "Index")));
+        if (!m) return send(200, errorXml(100002));
+        m.stat = 1;
+        return send(200, xml("OK"));
+      }
+      if (ep === "sms/delete-sms" && req.method === "POST") {
+        const i = o.sms?.findIndex(
+          (x) => x.index === Number(field(body, "Index")),
+        );
+        if (i === undefined || i < 0) return send(200, errorXml(100002));
+        o.sms.splice(i, 1);
+        return send(200, xml("OK"));
+      }
+      if (ep === "sms/send-sms" && req.method === "POST") {
+        if (o.sendSmsError) return send(200, errorXml(o.sendSmsError));
+        sendPolls = 0;
+        sent.push({
+          phone: unesc(field(body, "Phone")),
+          content: unesc(field(body, "Content")),
+          length: Number(field(body, "Length")),
+          reserved: Number(field(body, "Reserved")),
+          raw: body,
+        });
+        return send(200, xml("OK"));
+      }
+      if (ep === "sms/send-status") {
+        const phone = sent.at(-1)?.phone ?? "";
+        const seq = o.sendStatus ?? [
+          xml(
+            `<Phone>${esc(phone)}</Phone><SucPhone></SucPhone><FailPhone></FailPhone><TotalCount>1</TotalCount><CurIndex>0</CurIndex>`,
+          ),
+          xml(
+            `<Phone></Phone><SucPhone>${esc(phone)}</SucPhone><FailPhone></FailPhone><TotalCount>1</TotalCount><CurIndex>1</CurIndex>`,
+          ),
+        ];
+        const body2 = seq[Math.min(sendPolls, seq.length - 1)];
+        sendPolls += 1;
+        return send(200, body2);
       }
       if (o.extra[ep]) return send(200, o.extra[ep]);
       if (DATA[ep]) return send(200, DATA[ep]);
@@ -167,6 +263,11 @@ export async function startMockRouter(opts = {}) {
   return {
     url: `http://127.0.0.1:${port}`,
     calls,
+    sent,
+    sms: o.sms,
+    expireSession: () => {
+      loggedIn = false;
+    },
     credentials: { username: o.username, password: o.password },
     close: () =>
       new Promise((resolve) => {

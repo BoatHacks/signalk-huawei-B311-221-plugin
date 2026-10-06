@@ -44,5 +44,8 @@
     "@signalk/server-api": "^2.30.0",
     "@types/node": "^22.0.0",
     "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.2"
   }
 }
