@@ -1,7 +1,7 @@
 // Huawei B311 webapp: polls the plugin REST API and renders four panels.
 import { ApiError, api } from "./lib/api.js";
 import { el } from "./lib/dom.js";
-import { formatAge, isStale, sendOutcome } from "./lib/format.js";
+import { formatAge, isStale, sendOutcome, writeDenial } from "./lib/format.js";
 import { startModePolling } from "./lib/mode.js";
 import "./lib/panels.js";
 import "./lib/sms-panel.js";
@@ -90,9 +90,20 @@ class LteApp extends HTMLElement {
       this.#refs.age.textContent = `Updated ${formatAge(Date.now() - Date.parse(st.updatedAt))}`;
   }
 
-  #noteError(e) {
-    if (e instanceof ApiError && e.status === 401) this.#authError = true;
-    if (e instanceof ApiError && e.status === 403) this.#canWrite = false;
+  #noteError(e, { write = false } = {}) {
+    if (!(e instanceof ApiError)) return;
+    if (write) {
+      // Reads working means we are signed in, so a refused write is about rights.
+      const denial = writeDenial(
+        e.status,
+        this.#statusAt > 0 && !this.#authError,
+      );
+      if (denial === "admin") this.#canWrite = false;
+      if (denial === "login") this.#authError = true;
+      return;
+    }
+    if (e.status === 401) this.#authError = true;
+    if (e.status === 403) this.#canWrite = false;
   }
 
   async #pollStatus() {
@@ -128,7 +139,7 @@ class LteApp extends HTMLElement {
       await fn();
       return null;
     } catch (e) {
-      this.#noteError(e);
+      this.#noteError(e, { write: true });
       return e;
     }
   }
@@ -142,7 +153,8 @@ class LteApp extends HTMLElement {
       if (err) {
         this.#refs.sms.setResult(
           "err",
-          err.status === 403
+          writeDenial(err.status, this.#statusAt > 0 && !this.#authError) ===
+            "admin"
             ? "Admin rights required to send."
             : `Send failed: ${err.message}`,
         );

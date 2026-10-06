@@ -88,6 +88,7 @@ export async function startMockRouter(opts = {}) {
     //                  call, once. expireSession() does the same on demand.
     loginErrorCode: 108006,
     rotateTokens: false,
+    port: 0,
     sms: null,
     sendStatus: null,
     sendSmsError: null,
@@ -265,7 +266,9 @@ export async function startMockRouter(opts = {}) {
       return send(200, errorXml(100002));
     });
   });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await new Promise((resolve) =>
+    server.listen(o.port ?? 0, "127.0.0.1", resolve),
+  );
   const { port } = server.address();
   return {
     url: `http://127.0.0.1:${port}`,

@@ -142,3 +142,14 @@ export function sendOutcome(response) {
   }
   return { kind: "ok", message: "Message sent." };
 }
+
+/**
+ * Why a write was refused. A Signal K server answers a signed-in user who is
+ * not an admin with 401 ("please log in"), the same as someone not signed in
+ * at all, so the two are told apart by whether reads are working.
+ */
+export function writeDenial(status, signedIn) {
+  if (status === 403) return "admin";
+  if (status === 401) return signedIn ? "admin" : "login";
+  return null;
+}

@@ -163,3 +163,15 @@ test("a send the router never confirmed is a warning that keeps the draft", asyn
   assert.match(out.message, /not confirm/i);
   assert.match(out.message, /before sending again/i);
 });
+
+test("a refused write is told apart: not signed in, or signed in without admin rights", async () => {
+  const { writeDenial } = await import("../public/lib/format.js");
+  // Signal K answers a signed-in non-admin's write with 401, not 403.
+  assert.equal(writeDenial(401, true), "admin");
+  assert.equal(writeDenial(403, true), "admin");
+  assert.equal(writeDenial(403, false), "admin");
+  assert.equal(writeDenial(401, false), "login");
+  for (const status of [0, 200, 400, 404, 409, 429, 502, 503]) {
+    assert.equal(writeDenial(status, true), null, String(status));
+  }
+});
