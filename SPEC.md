@@ -122,8 +122,8 @@ only where no precedent exists.
 
 | Path | Content | Precedent |
 |---|---|---|
-| `networking.lte.rssi`, `networking.lte.rsrp` | Received power in **W** (SI), converted from dBm, with `meta` (§6.4) | `rssi` (dBm there) |
-| `networking.lte.rsrq`, `networking.lte.sinr` | Power **ratio** (SI), converted from dB, with `meta` (§6.4) | new (openwrt has `rsrq`, `snr` in dB) |
+| `networking.lte.rssi`, `networking.lte.rsrp` | Received power, **dBm** | `rssi` (teltonika, dBm); openwrt has both in dBm |
+| `networking.lte.rsrq`, `networking.lte.sinr` | **dB** | openwrt has `rsrq`, `snr` in dB |
 | `networking.lte.bars` | 0-5 | netgear, teltonika |
 | `networking.lte.radioQuality` | ratio 0-1, derived from RSRP and SINR (formula in ARCHITECTURE) | netgear, teltonika |
 | `networking.lte.connectionType` | `LTE`, `LTE-A`, … | netgear |
@@ -180,41 +180,32 @@ none if the server runs without security.
    connection, Data plan, SMS. Tiles must degrade to neutral/stale, not
    green, when the plugin is not running.
 
-### 6.4 SI conversion and conversion metadata
+### 6.4 Units and metadata
 
-The Signal K data model states that values are always SI units, so the
-plugin converts the router's logarithmic values before publishing:
+**Signal values are published in dBm / dB, as the router reports them
+and as every existing LTE plugin does.** The Signal K data model says
+values are SI, and dBm/dB are logarithmic units outside that rule; this
+is a deliberate deviation (§12), chosen so that:
 
-- dBm → watts: `W = 10^(dBm/10) / 1000` (RSRP, RSSI)
-- dB → linear ratio: `ratio = 10^(dB/10)` (RSRQ, SINR)
+- `networking.lte.rssi` means the same thing whichever plugin
+  publishes it (signalk-teltonika-rutx11 uses dBm);
+- generic gauge clients and Status Tiles `zone` checks show familiar
+  figures without a conversion layer;
+- no precision or readability is lost to values like 1e-13 W.
 
-**What the specification offers for `meta`.** The `meta` schema
-(`definitions.json`, `data_model_metadata.md`) defines `displayName`,
-`longName`, `shortName`, `description`, `units`, `timeout`,
-`displayScale` (`lower`, `upper`, `type` of `linear`, `logarithmic`,
-`squareroot` or `power`), the `*Method` arrays, `zones`, `enum` and
-`properties`. It has **no conversion or original-unit property**, and it
-does not forbid additional keys (no `additionalProperties: false`), but
-it does not bless them either. So the design keeps the standard fields
-carrying the information, and treats any custom key as optional:
+Every published numeric path carries `meta` using only fields the
+specification defines (`definitions.json`, `data_model_metadata.md`):
 
-- `units`: `W` or `ratio`.
-- `displayName`: the plain name, *without* units, per the spec
-  ("RSRP").
-- `description`: required by the schema. States the original unit and
-  formula in words: "Reference signal received power, published in W;
-  the router reports dBm, dBm = 10·log10(W·1000)".
-- `displayScale`: `type: "logarithmic"` with `lower` and `upper` in W.
-  This is the standard way to tell a gauge that the value should be
-  drawn on a log scale, which is what makes watts readable as dBm-like
-  deflection.
-- `zones`: thresholds expressed in the converted SI values (e.g. RSRP
-  `-100 dBm` is `1e-13 W`).
-- optional custom `conversion` object
-  (`{from, to, formula, inverse}`): a machine-readable hint only.
-  Because the spec doesn't define it and a server may drop it,
-  **nothing may depend on it**. The webapp hard-codes the inverse
-  formulas for the known paths.
+- `units`: `dBm`, `dB`, `B` (bytes), `s`, `ratio` as appropriate.
+- `displayName`: plain name without units ("RSRP").
+- `description`: required by the schema; says what the value is and
+  its unit.
+- `displayScale`: sensible `lower`/`upper` (e.g. RSRP -140..-40),
+  `type: "linear"` since the values are already logarithmic.
+- `zones` for RSRP and SINR (§6.3 tiles use the same bands).
+
+No custom `meta` keys are used. The webapp and tiles read values
+as-is.
 
 **Zones have a side effect.** The spec says a server monitors any key
 whose `meta` has `zones` and raises a notification at the matching
@@ -223,11 +214,6 @@ Publishing `zones` on RSRP and SINR therefore gives weak-signal
 notifications for free, from the server, and the plugin does not raise a
 separate `signal` notification for those. Plugin-raised notifications
 remain for plan, link, no-service/roaming and new SMS.
-
-Known drawback of SI here: common gauge clients will show 1e-13 W
-rather than a familiar dBm figure unless they honour
-`displayScale.type = logarithmic` or the description. The plugin's own
-webapp and tiles are unaffected.
 
 ## 7. User Interface
 
@@ -340,9 +326,17 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
   an allowlist was considered and declined.
 - **SMS write actions are admin-only.** Sending spends money and can
   message anyone; admin is the narrowest existing role.
-- **SI conversion with conversion info in `meta`.** Keeps the data
-  Signal K-conformant while letting consumers and the webapp recover
-  dBm/dB.
+- **dBm/dB published as-is, not converted to SI.** An SI conversion
+  (watts and linear ratios, with the original unit recoverable from
+  `meta`) was designed first and then reversed. Signal K says values are
+  SI, but dBm/dB are the router's native units, every existing LTE
+  plugin uses them, and converting makes a shared path like
+  `networking.lte.rssi` mean different things in different plugins.
+- **Own TypeScript router client, one held session.** No Python
+  dependency, small protocol, fixtures pin behaviour. A single session is
+  held and reused with re-login on expiry, accepting that it may log
+  the user out of the router's own web UI, because repeated logins risk
+  the router's password-attempt lockout (error 108007).
 - **Webapp mirrors Status Tiles' look, vanilla and fully vendored.**
   Matches the display the user already has on the boat, and works with
   no internet.
@@ -353,15 +347,11 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 
 1. **Exact router endpoints and login hashing** on the B311-221's
    firmware. Needs verification against a real device; none available
-   in the design session.
-2. **Router API choices**: see §13.5 onward.
-3. **Server handling of `meta`**: confirm on a running server that `zones` and `displayScale` published via delta `meta` are accepted and that the server-generated zone notifications appear under the expected path. (The custom `conversion` key is optional and nothing depends on it.)
-4. **SI vs. existing plugins' dBm**: signalk-teltonika-rutx11
-   publishes `networking.lte.rssi` in dBm. This plugin publishes the
-   same path in W (decision: SI, §12). Two plugins on one path with
-   different units would confuse a server that has both. Acceptable
-   because a boat has one router, or should `rssi` stay in dBm for
-   compatibility and only the new paths be SI?
-5. **Router API**: SMS encoding for non-ASCII text, concurrent-session
+   in the design session and no recorded responses yet (the user will
+   supply fixtures later). Until then every response field name is
+   unverified and the client is built against the library's protocol
+   only.
+2. **Server handling of `meta`**: confirm on a running server that `zones` and `displayScale` published via delta `meta` are accepted and that the server-generated zone notifications appear under the expected path.
+3. **Router API**: SMS encoding for non-ASCII text, concurrent-session
    behaviour and counter semantics still need confirming on a real
    device. See ARCHITECTURE §5.1.

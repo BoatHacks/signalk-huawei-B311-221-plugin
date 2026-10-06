@@ -58,9 +58,9 @@ mark-read through RouterClient.
 ### 2.5 Publisher
 The only module that talks to the Signal K app object for output:
 `handleMessage` deltas, `meta` deltas (units, displayName, zones),
-notification set/clear. Maps domain objects to paths from SPEC §6.1 and performs the dBm→W /
-dB→ratio conversion with its `meta` (SPEC §6.4) in one small `units`
-module, so conversion and its inverse are tested together.
+notification set/clear. Maps domain objects to paths from SPEC §6.1 and attaches the `meta`
+from SPEC §6.4. Values are published in the router's units; there is no
+conversion layer.
 
 ### 2.6 HTTP routes
 Registered through the plugin's `registerWithRouter`. Thin handlers over
@@ -79,8 +79,7 @@ custom properties on `:root` (dark base, `data-mode` day/night set from
 the `environment.mode` delta), flat panels, `system-ui` plus monospace.
 No build step, no framework, and **no network dependencies**: every
 asset is vendored in `public/`. A test greps `public/` for `http(s)://`
-references to enforce this. The webapp converts SI signal values back to
-dBm/dB for display using the `conversion` meta (SPEC §6.4).
+references to enforce this.
 
 ## 3. Data Models
 
