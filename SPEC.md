@@ -128,7 +128,7 @@ only where no precedent exists.
 | `networking.lte.radioQuality` | ratio 0-1, derived from RSRP and SINR (formula in ARCHITECTURE) | netgear, teltonika |
 | `networking.lte.connectionType` | `LTE`, `LTE-A`, … | netgear |
 | `networking.lte.registerNetworkDisplay` | Operator name | netgear, teltonika |
-| `networking.lte.connectionText` | See §13.2 | netgear, teltonika, signalk-internet |
+| `networking.lte.connectionText` | Operator name, or the literal `No service` when not registered | signalk-internet (see below) |
 | `networking.lte.curBand`, `networking.lte.cellId` | Band, cell ID | netgear |
 | `networking.lte.pci`, `networking.lte.roaming` | Physical cell ID, roaming flag | new |
 | `networking.wan.ip` | WAN IP address | teltonika |
@@ -139,10 +139,19 @@ only where no precedent exists.
 | `networking.lte.sms.unread` | Unread SMS count | new |
 | `networking.lte.routerLink` | Plugin↔router state (§3.1) | new |
 
+`connectionText` is the one leaf where precedent disagrees.
+signalk-internet reads it and matches it against operator names and the
+literal string `No service` (its README says "provides operator name in
+`networking.lte.connectionText`", and its evaluator supports
+`matchValue: "No service"`). signalk-teltonika-rutx11 instead puts the
+network type (`LTE`) there. This plugin follows the consumer, since that
+is what actually reads the value: operator name, or `No service`.
+Network type goes in `connectionType`.
+
 Notifications live under `notifications.networking.lte.*`: `plan`
 (warn/alarm at the configured thresholds), `link` (unreachable / auth
-failed), `signal` (weak signal / no service / roaming), `sms.<id>`
-(new message).
+failed), `service` (no service / roaming), `sms.<id>` (new message).
+Weak-signal notifications come from the server via `meta.zones` (§6.4).
 
 ### 6.2 REST API (under `/plugins/signalk-huawei-b311-221/`)
 
@@ -173,26 +182,52 @@ none if the server runs without security.
 
 ### 6.4 SI conversion and conversion metadata
 
-Signal K stores SI units, so the plugin converts the router's
-logarithmic values before publishing:
+The Signal K data model states that values are always SI units, so the
+plugin converts the router's logarithmic values before publishing:
 
 - dBm → watts: `W = 10^(dBm/10) / 1000` (RSRP, RSSI)
 - dB → linear ratio: `ratio = 10^(dB/10)` (RSRQ, SINR)
 
-Every converted path carries `meta` that lets a reader recover the
-original value:
+**What the specification offers for `meta`.** The `meta` schema
+(`definitions.json`, `data_model_metadata.md`) defines `displayName`,
+`longName`, `shortName`, `description`, `units`, `timeout`,
+`displayScale` (`lower`, `upper`, `type` of `linear`, `logarithmic`,
+`squareroot` or `power`), the `*Method` arrays, `zones`, `enum` and
+`properties`. It has **no conversion or original-unit property**, and it
+does not forbid additional keys (no `additionalProperties: false`), but
+it does not bless them either. So the design keeps the standard fields
+carrying the information, and treats any custom key as optional:
 
-- `units`: `W` or `ratio`
-- `displayName` and `description` stating the original unit, e.g.
-  "RSRP (originally dBm)"
-- a plugin-defined `conversion` object:
-  `{ "from": "dBm", "to": "W", "formula": "W = 10^(dBm/10)/1000", "inverse": "dBm = 10*log10(W*1000)" }`
-- `zones` expressed in the converted SI values, so `zone` checks in
-  Status Tiles work without conversion on their side.
+- `units`: `W` or `ratio`.
+- `displayName`: the plain name, *without* units, per the spec
+  ("RSRP").
+- `description`: required by the schema. States the original unit and
+  formula in words: "Reference signal received power, published in W;
+  the router reports dBm, dBm = 10·log10(W·1000)".
+- `displayScale`: `type: "logarithmic"` with `lower` and `upper` in W.
+  This is the standard way to tell a gauge that the value should be
+  drawn on a log scale, which is what makes watts readable as dBm-like
+  deflection.
+- `zones`: thresholds expressed in the converted SI values (e.g. RSRP
+  `-100 dBm` is `1e-13 W`).
+- optional custom `conversion` object
+  (`{from, to, formula, inverse}`): a machine-readable hint only.
+  Because the spec doesn't define it and a server may drop it,
+  **nothing may depend on it**. The webapp hard-codes the inverse
+  formulas for the known paths.
 
-The webapp converts back to dBm / dB for display. Whether the server
-passes the custom `conversion` key through unchanged is to be verified
-(§13.3).
+**Zones have a side effect.** The spec says a server monitors any key
+whose `meta` has `zones` and raises a notification at the matching
+`notifications.*` path itself (`notifications.networking.lte.rsrp`).
+Publishing `zones` on RSRP and SINR therefore gives weak-signal
+notifications for free, from the server, and the plugin does not raise a
+separate `signal` notification for those. Plugin-raised notifications
+remain for plan, link, no-service/roaming and new SMS.
+
+Known drawback of SI here: common gauge clients will show 1e-13 W
+rather than a familiar dBm figure unless they honour
+`displayScale.type = logarithmic` or the description. The plugin's own
+webapp and tiles are unaffected.
 
 ## 7. User Interface
 
@@ -319,17 +354,14 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 1. **Exact router endpoints and login hashing** on the B311-221's
    firmware. Needs verification against a real device; none available
    in the design session.
-2. **`connectionText` meaning**: signalk-internet's README says it
-   carries the operator name, but signalk-teltonika-rutx11 puts the
-   network type there (`LTE`) and the operator in
-   `registerNetworkDisplay`. Pick one after reading signalk-internet's
-   code; the current plan is operator in `registerNetworkDisplay` and
-   network type in `connectionText` (Teltonika's usage), unless
-   signalk-internet's behaviour demands otherwise.
-3. **Conversion metadata**: confirm the server preserves a custom `conversion` key in `meta`, and that SI watts for RSRP are handled sanely by common clients; fall back to `description` only if not.
+2. **Router API choices**: see §13.5 onward.
+3. **Server handling of `meta`**: confirm on a running server that `zones` and `displayScale` published via delta `meta` are accepted and that the server-generated zone notifications appear under the expected path. (The custom `conversion` key is optional and nothing depends on it.)
 4. **SI vs. existing plugins' dBm**: signalk-teltonika-rutx11
    publishes `networking.lte.rssi` in dBm. This plugin publishes the
    same path in W (decision: SI, §12). Two plugins on one path with
    different units would confuse a server that has both. Acceptable
    because a boat has one router, or should `rssi` stay in dBm for
    compatibility and only the new paths be SI?
+5. **Router API**: SMS encoding for non-ASCII text, concurrent-session
+   behaviour and counter semantics still need confirming on a real
+   device. See ARCHITECTURE §5.1.

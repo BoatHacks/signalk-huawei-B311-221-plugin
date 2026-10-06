@@ -119,6 +119,35 @@ agree. Exact anchors are tunable constants in one file.
 - **Signal K Status Tiles**: only via the `statusTileExamples` provider
   and via published paths/meta/notifications. No code dependency.
 
+### 5.1 Router web API
+
+Source: the community client
+[Salamek/huawei-lte-api](https://github.com/Salamek/huawei-lte-api),
+which lists the B311-221 as tested. Paths below are under `<router>/api/`.
+Field names inside the responses are **not** taken from that library
+(it passes raw dicts through) and must be pinned by recording fixtures.
+
+| Concern | Calls |
+|---|---|
+| Session and token | `GET /` and read `<meta name="csrf_token" content="…">` from the HTML head; otherwise `GET webserver/token`, then `GET webserver/SesTokInfo` (`TokInfo`). A session cookie is set by the router |
+| Request headers | `__RequestVerificationToken` on every request. Responses may rotate it via `__RequestVerificationTokenone` / `…two` headers, or `__RequestVerificationToken`. The client keeps a small token queue |
+| Request/response format | XML, wrapped in `<request>…</request>`; errors arrive as `<error><code>…` (e.g. 125002/125003 wrong session token, 100003 no rights, 100004 busy, 100002 unsupported) |
+| Login | `GET user/state-login` (state, `password_type`, `rsapadingtype`), then `POST user/login` with `Username`, `Password`, `password_type`. `password_type` 4: `base64(sha256(user + base64(sha256(password) hex) + token) hex)`; type 0 is base64 of the password. Login then refreshes the CSRF token |
+| Signal | `GET device/signal` (rssi, rsrp, rsrq, sinr, cell, band, pci; values usually carry unit suffixes such as `dBm`, `dB`, and may be prefixed `>`/`<`, so parsing must be tolerant) |
+| Status | `GET monitoring/status` (connection status, signal icon, network type, roaming, WAN IP, …) |
+| Operator | `GET net/current-plmn` |
+| Cell | `GET net/cell-info` |
+| Traffic | `GET monitoring/traffic-statistics` (current session and total), `GET monitoring/month_statistics` (router's own month) |
+| SMS read | `POST sms/sms-list` with ordered fields `PageIndex, ReadCount, BoxType (1=local inbox), SortType, Ascending, UnreadPreferred`; `GET sms/sms-count` |
+| SMS send | `POST sms/send-sms` with `Index=-1, Phones/Phone, Sca, Content, Length, Reserved (text mode), Date`; poll `GET sms/send-status` |
+| SMS manage | `POST sms/set-read`, `POST sms/delete-sms` (`Index`) |
+| Logout | `POST user/logout` |
+
+Notes that shape the design: field order in POST bodies matters on some
+models; messages are identified by the router's `Index`, which can be
+reused after deletion, so SmsStore dedupes on index plus date plus
+sender; the router speaks CESU-8 for characters outside the BMP.
+
 ## 6. Security Considerations
 
 - **Router credentials** are in the plugin config on the server. They are
