@@ -86,11 +86,11 @@ function setup(over: Partial<RoutesDeps> = {}) {
       send: async (to, text) => {
         calls.push(`send ${to} ${text}`);
       },
-      markRead: async (index) => {
-        calls.push(`router.markRead ${index}`);
+      markRead: async (m) => {
+        calls.push(`router.markRead ${m.index}`);
       },
-      remove: async (index) => {
-        calls.push(`router.remove ${index}`);
+      remove: async (m) => {
+        calls.push(`router.remove ${m.index}`);
       },
     },
     resetPlan: () => {
@@ -339,4 +339,51 @@ test("admin check: security disabled means unrestricted, enabled means admin onl
   assert.equal(strict(true)(req), true);
   assert.equal(strict(false)(req), false);
   assert.equal(strict(undefined)(req), false);
+});
+
+test("the send response says whether delivery was confirmed", async () => {
+  const unknown = setup({
+    actions: {
+      send: async () => ({ status: "unknown" as const }),
+      markRead: async () => {},
+      remove: async () => {},
+    },
+  });
+  const res = await call(unknown.find("POST", "/sms"), {
+    body: { to: "+358401234567", text: "hi" },
+  });
+  assert.deepEqual(res.body, { ok: true, status: "unknown" });
+  const plain = setup();
+  const ok = await call(plain.find("POST", "/sms"), {
+    body: { to: "+358401234567", text: "hi" },
+  });
+  assert.deepEqual(ok.body, { ok: true, status: "sent" });
+});
+
+test("a message that changed on the router is a 409 and nothing is changed", async () => {
+  const conflict = () =>
+    Object.assign(
+      new Error("That message changed on the router; refresh the list"),
+      { name: "Conflict" },
+    );
+  const { find, calls } = setup({
+    actions: {
+      send: async () => {},
+      markRead: async () => {
+        throw conflict();
+      },
+      remove: async () => {
+        throw conflict();
+      },
+    },
+  });
+  for (const [m, p] of [
+    ["POST", "/sms/:id/read"],
+    ["DELETE", "/sms/:id"],
+  ] as const) {
+    const res = await call(find(m, p), { params: { id: "id-1" } });
+    assert.equal(res.statusCode, 409);
+    assert.match((res.body as { error: string }).error, /changed/);
+  }
+  assert.ok(!calls.some((c) => c.startsWith("store.")));
 });

@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import type { RuntimeApp } from "../src/runtime.ts";
+import type { RuntimeApp, RuntimeOptions } from "../src/runtime.ts";
 import { createRuntime } from "../src/runtime.ts";
 import type { PluginConfig } from "../src/types.ts";
 import { createFakeTimers } from "./helpers/fake-timers.ts";
@@ -91,6 +91,7 @@ async function boot(
   routerOpts: object = {},
   cfg: Partial<PluginConfig> = {},
   dataDir?: string,
+  clientOptions?: RuntimeOptions["clientOptions"],
 ) {
   const extra: Record<string, string> = {
     "monitoring/traffic-statistics": traffic(0, 0),
@@ -111,6 +112,7 @@ async function boot(
     }),
     dataDir: dir,
     timers,
+    ...(clientOptions ? { clientOptions } : {}),
   });
   return { router, extra, f, timers, dir, runtime };
 }
@@ -346,6 +348,146 @@ test("stop logs out, flushes state and leaves no timers behind", async () => {
     assert.ok(existsSync(join(dir, "usage.json")));
     assert.equal(timers.pendingCount(), 0);
   } finally {
+    await router.close();
+  }
+});
+
+const smsNoteStates = (f: ReturnType<typeof fakeApp>) =>
+  f.deltas
+    .flatMap((d) => d.updates.flatMap((u) => u.values ?? []))
+    .filter((e) => e.path.startsWith("notifications.networking.lte.sms."))
+    .map((e) => ({
+      path: e.path,
+      state: (e.value as { state: string }).state,
+    }));
+
+const twoMessages = () =>
+  smsList(
+    message(40002, "+358409999999", "second", "2023-10-07 08:00:00"),
+    message(40001, "+358401234567", "first", "2023-10-06 12:00:00"),
+  );
+
+test("an SMS notification is cleared when the message is marked read", async () => {
+  const { router, extra, f, runtime } = await boot();
+  try {
+    await runtime.start();
+    await initialPollsDone(f);
+    extra["sms/sms-list"] = twoMessages();
+    await runtime.pollNow("sms");
+    await settle(() => smsNoteStates(f).length === 1);
+    assert.equal(smsNoteStates(f)[0]?.state, "alert");
+    const path = smsNoteStates(f)[0]?.path;
+
+    const deps = runtime.routeDeps(() => true);
+    const msg = deps.sms.list().find((m) => m.text === "second");
+    assert.ok(msg);
+    await deps.actions.markRead(msg);
+    deps.sms.markRead(msg.id);
+    await settle(() =>
+      smsNoteStates(f).some((n) => n.path === path && n.state === "normal"),
+    );
+  } finally {
+    await runtime.stop();
+    await router.close();
+  }
+});
+
+test("an SMS notification is cleared when the message disappears from the router", async () => {
+  const { router, extra, f, runtime } = await boot();
+  try {
+    await runtime.start();
+    await initialPollsDone(f);
+    extra["sms/sms-list"] = twoMessages();
+    await runtime.pollNow("sms");
+    await settle(() => smsNoteStates(f).length === 1);
+    extra["sms/sms-list"] = smsList(
+      message(40001, "+358401234567", "first", "2023-10-06 12:00:00"),
+    );
+    await runtime.pollNow("sms");
+    await settle(() => smsNoteStates(f).some((n) => n.state === "normal"));
+  } finally {
+    await runtime.stop();
+    await router.close();
+  }
+});
+
+test("starting while the router is down never reports the link as ok first", async () => {
+  const { router, f, runtime } = await boot();
+  await router.close();
+  try {
+    await runtime.start();
+    await settle(() =>
+      f.values("networking.lte.routerLink").includes("unreachable"),
+    );
+    assert.deepEqual(f.states("notifications.networking.lte.link"), ["warn"]);
+  } finally {
+    await runtime.stop();
+  }
+});
+
+test("deleting or marking a message that changed on the router is refused", async () => {
+  const { router, extra, f, runtime } = await boot();
+  try {
+    await runtime.start();
+    await initialPollsDone(f);
+    const deps = runtime.routeDeps(() => true);
+    const cached = deps.sms.list().find((m) => m.text === "first");
+    assert.ok(cached);
+    // The router reuses index 40001 for a different message.
+    extra["sms/sms-list"] = smsList(
+      message(40001, "+358407777777", "someone else", "2023-10-08 09:00:00"),
+    );
+    for (const act of [deps.actions.remove, deps.actions.markRead]) {
+      await assert.rejects(
+        act(cached),
+        (e: unknown) => e instanceof Error && e.name === "Conflict",
+      );
+    }
+    const writes = router.calls.filter((c: { path: string }) =>
+      /delete-sms|set-read/.test(c.path),
+    );
+    assert.equal(writes.length, 0);
+  } finally {
+    await runtime.stop();
+    await router.close();
+  }
+});
+
+test("a send the router never confirms is reported as unknown, not as sent", async () => {
+  const pending = xml(
+    "<Phone>+358401234567</Phone><SucPhone></SucPhone><FailPhone></FailPhone><TotalCount>1</TotalCount><CurIndex>0</CurIndex>",
+  );
+  const { router, f, runtime } = await boot(
+    { sendStatus: [pending] },
+    {},
+    undefined,
+    { sleep: async () => {}, sendTimeoutMs: 0 },
+  );
+  try {
+    await runtime.start();
+    await initialPollsDone(f);
+    const result = await runtime
+      .routeDeps(() => true)
+      .actions.send("+358401234567", "hello");
+    assert.deepEqual(result, { status: "unknown" });
+  } finally {
+    await runtime.stop();
+    await router.close();
+  }
+});
+
+test("a busy router session shows as retrying, not as a login failure", async () => {
+  const { router, f, runtime } = await boot({
+    failLogin: true,
+    loginErrorCode: 108003,
+  });
+  try {
+    await runtime.start();
+    await settle(() => f.statuses.some((s) => /another/i.test(s)));
+    assert.ok(!f.errors.some((e) => /rejected/i.test(e)));
+    assert.equal(runtime.status().link, "unreachable");
+  } finally {
+    await runtime.stop();
     await router.close();
   }
 });
