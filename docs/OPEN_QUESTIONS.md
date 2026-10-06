@@ -27,6 +27,9 @@ code and docs get updated.
 | D16 | Status Tiles set | Unread SMS = `opportunity`, router link `connecting` = neutral, stale after 30 s (signal), 120 s (connection), 300 s (plan, link, SMS); inline zones copied from D11 | Guesses within the tile semantics | `status-tiles-examples.json` |
 | D17 | SMS: first run | First ingest with no saved state marks existing messages as seen without notifying; outgoing messages never count as new; a deleted message stays in the seen list | Avoids a notification storm | `src/sms-store.ts` |
 | D18 | Saved state files | Corrupt or wrong-version files are moved aside as `*.corrupt-<time>` and ignored; writes coalesced to at most one per 5 s per file; no migration yet | Never block start-up on bad state | `src/state-store.ts` |
+| D19 | Who may use the REST routes | Reads need a logged-in user (`router.access("readonly")`); writes get no `access()` call, so the Signal K server makes them admin-only, and each write handler also checks admin itself. With server security switched off there is no admin concept, so everyone is allowed, as everywhere else on such a server | The server documents plain routes as admin-only; mirrors its own model | `src/routes.ts` |
+| D20 | SMS send limits | At most 5 sends per minute in total, text up to 500 characters, request body up to 8 KB, router failures shown as a generic message | Sending costs money and can message anyone | `src/routes.ts` |
+| D21 | Webapp behaviour | Decimal data units; values go to a dash when the link is not ok or data is older than 60 s; status polled every 10 s, SMS and day/night every 30 s, paused while the tab is hidden; confirm() before plan reset and SMS delete; write controls hidden after the first 403 | Matches Status Tiles' "unknown, never green" | `public/` |
 
 ## Open questions (need you or the hardware)
 
@@ -37,3 +40,5 @@ code and docs get updated.
 | Q3 | SMS encoding for non-ASCII text, behaviour with concurrent sessions | Test with the real router | SPEC §13.3 |
 | Q4 | Does the router list the whole SMS inbox in one page? The SMS cache is replaced from each poll, so a partial page would drop messages from other pages | Verify with a real inbox of more than 5 messages | `src/sms-store.ts` cache |
 | Q5 | Are the tile stale times (D16) right for the real polling rates? Router link, plan and SMS paths must be re-emitted at least every 5 minutes | Publish these paths on every poll, not only on change | Tile accuracy |
+| Q6 | Are the send limits (D20) right for you, and should sending also work when server security is disabled (D19)? | Keep as is; turn on Signal K security if the boat network is shared | `src/routes.ts` |
+| Q7 | The webapp's phone layout clips the last SMS in the list box, and has no tabs | Fine for now; refine after seeing real use | `public/lib/styles.js` |
