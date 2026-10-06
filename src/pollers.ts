@@ -127,7 +127,8 @@ export function createPollers(opts: PollersOptions): Pollers {
     const name = e instanceof Error ? e.name : "";
     const message = e instanceof Error ? e.message : String(e);
     if (name === "AuthFailed") return { ok: false, kind: "auth", message };
-    if (name === "Unreachable")
+    // A busy login session (another admin is logged in) clears by itself.
+    if (name === "Unreachable" || name === "SessionBusy")
       return { ok: false, kind: "unreachable", message };
     return { ok: false, kind: "other", message };
   };

@@ -247,7 +247,26 @@ export function routerDateToIso(raw: unknown): string | undefined {
     mi as number,
     s as number,
   );
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  // `new Date` rolls impossible values over (month 13, 30 February), so check
+  // that every part survived.
+  const same =
+    date.getFullYear() === y &&
+    date.getMonth() === (mo as number) - 1 &&
+    date.getDate() === d &&
+    date.getHours() === h &&
+    date.getMinutes() === mi &&
+    date.getSeconds() === s;
+  return same ? date.toISOString() : undefined;
+}
+
+/**
+ * The inverse of `routerDateToIso`: a moment as the router's wall-clock
+ * string, in the same convention (the Signal K server's local time).
+ */
+export function formatRouterDate(epochMs: number): string {
+  const d = new Date(epochMs);
+  const p = (n: number, width = 2) => String(n).padStart(width, "0");
+  return `${p(d.getFullYear(), 4)}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
 function asList(v: unknown): unknown[] {

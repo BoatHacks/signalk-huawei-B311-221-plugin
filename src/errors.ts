@@ -5,7 +5,6 @@ export type AuthFailureReason =
   | "credentials-missing"
   | "username-wrong" // 108001
   | "password-wrong" // 108002
-  | "already-logged-in" // 108003
   | "credentials-wrong" // 108006
   | "lockout" // 108007: too many attempts, the router blocks logins for a while
   | "password-change-required" // 115002
@@ -19,8 +18,6 @@ export function authReasonForCode(code: number): AuthFailureReason | undefined {
       return "username-wrong";
     case 108002:
       return "password-wrong";
-    case 108003:
-      return "already-logged-in";
     case 108006:
       return "credentials-wrong";
     case 108007:
@@ -48,6 +45,19 @@ export class AuthFailed extends Error {
     this.reason = reason;
     this.code = code;
     this.lockout = reason === "lockout";
+  }
+}
+
+/**
+ * The router refused the login because another admin session is active
+ * (108003), for example its own web page is open. That clears by itself, so
+ * unlike AuthFailed it is never latched and polling retries with backoff.
+ */
+export class SessionBusy extends Error {
+  readonly code = 108003;
+  constructor() {
+    super("The router has another admin session open (108003); will retry");
+    this.name = "SessionBusy";
   }
 }
 

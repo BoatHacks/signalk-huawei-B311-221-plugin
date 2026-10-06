@@ -4,11 +4,13 @@ import {
   authReasonForCode,
   BadResponse,
   InvalidRequest,
+  SessionBusy,
   Unreachable,
 } from "./errors.ts";
 import { encodePassword } from "./login.ts";
 import {
   type ConnectionDetails,
+  formatRouterDate,
   parseConnection,
   parseOperator,
   parseSendStatus,
@@ -293,10 +295,7 @@ export class RouterClient {
       throw invalid("Message text has unsupported characters");
     const { mode, reserved, length } = chooseSmsMode(text);
     return this.enqueue(async () => {
-      const sentAt = new Date(this.now())
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " ");
+      const sentAt = formatRouterDate(this.now());
       expectOk(
         await this.call(
           "POST",
@@ -443,6 +442,7 @@ export class RouterClient {
       ]),
       { clearTokens: true },
     );
+    if (res.errorCode === 108003) throw new SessionBusy();
     if (res.errorCode !== undefined) {
       const reason = authReasonForCode(res.errorCode);
       if (reason) {
@@ -563,14 +563,16 @@ export class RouterClient {
         this.jar.set(pair.slice(0, i).trim(), pair.slice(i + 1).trim());
     }
     if (opts.clearTokens) this.tokens = [];
+    // The tokens a response carries replace whatever was queued: a router that
+    // sends a fresh one on every response would otherwise grow the queue
+    // without bound, and a POST would use the oldest, expired one.
     const one = res.headers.get("__RequestVerificationTokenone");
     if (one) {
-      this.tokens.push(one);
       const two = res.headers.get("__RequestVerificationTokentwo");
-      if (two) this.tokens.push(two);
+      this.tokens = two ? [one, two] : [one];
     } else {
       const single = res.headers.get("__RequestVerificationToken");
-      if (single) this.tokens.push(single);
+      if (single) this.tokens = [single];
     }
     let bytes: Bytes;
     try {

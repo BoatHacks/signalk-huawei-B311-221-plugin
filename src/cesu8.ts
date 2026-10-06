@@ -8,6 +8,8 @@ const encoder = new TextEncoder();
 export type Bytes = Uint8Array<ArrayBuffer>;
 
 export function cesu8Encode(text: string): Bytes {
+  // Without surrogates it is plain UTF-8.
+  if (!/[\ud800-\udfff]/.test(text)) return encoder.encode(text) as Bytes;
   const out: number[] = [];
   for (let i = 0; i < text.length; i += 1) {
     const code = text.charCodeAt(i);
@@ -27,6 +29,8 @@ export function cesu8Encode(text: string): Bytes {
 
 /** Rewrites CESU-8 surrogate pairs in `bytes` as proper 4-byte UTF-8. */
 export function cesu8Fix(bytes: Uint8Array): Bytes {
+  // Nearly every response has no CESU-8 pair: skip the copy.
+  if (!bytes.includes(0xed)) return bytes as Bytes;
   const out: number[] = [];
   for (let i = 0; i < bytes.length; i += 1) {
     const b = bytes[i] as number;
