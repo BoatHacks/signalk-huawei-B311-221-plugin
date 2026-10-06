@@ -156,9 +156,12 @@ sender; the router speaks CESU-8 for characters outside the BMP.
 
 - **Router credentials** are in the plugin config on the server. They are
   never logged and never returned by any REST route.
-- **Routes** rely on the Signal K server's authentication. Reads need an
-  authenticated user; SMS send/delete/mark-read and plan reset check for
-  an admin user in the handler and return 403 otherwise.
+- **Routes** are protected by the Signal K server. The server makes a
+  plugin route admin-only unless it was registered with
+  `router.access(level)`; reads register as `readonly`, writes are
+  registered plainly and so stay admin-only. Each write handler also checks
+  admin itself (`createAdminCheck` in `src/routes.ts`), which mirrors the
+  server: with security disabled everyone is allowed. 
 - **SMS send** validates the number (E.164-ish) and text length, and
   rate limits sends, since this spends real money and can message anyone.
 - **Router TLS**: the router speaks plain HTTP on the LAN. The plugin
