@@ -1,0 +1,232 @@
+{
+  "name": "Huawei B311-221 LTE router tiles",
+  "description": "Status Tiles for the signalk-huawei-b311-221 plugin: signal quality, cellular connection, data plan, router link and unread SMS. Missing or stale data always shows neutral, never green.",
+  "sets": [
+    {
+      "id": "huawei-b311",
+      "name": "Huawei B311 LTE router",
+      "description": "Signal quality, cellular connection, data plan, router link and unread SMS for the Huawei B311-221 plugin.",
+      "tiles": [
+        {
+          "id": "huaweiSignal",
+          "label": "LTE signal",
+          "size": "1x1",
+          "checks": [
+            {
+              "type": "zone",
+              "path": "networking.lte.rsrp",
+              "zones": [
+                {
+                  "upper": -115,
+                  "state": "alarm"
+                },
+                {
+                  "lower": -115,
+                  "upper": -105,
+                  "state": "warn"
+                },
+                {
+                  "lower": -105,
+                  "state": "nominal"
+                }
+              ],
+              "display": true,
+              "reason": "RSRP signal level",
+              "staleState": "neutral",
+              "staleMs": 30000
+            },
+            {
+              "type": "zone",
+              "path": "networking.lte.sinr",
+              "zones": [
+                {
+                  "upper": 0,
+                  "state": "alarm"
+                },
+                {
+                  "lower": 0,
+                  "upper": 5,
+                  "state": "warn"
+                },
+                {
+                  "lower": 5,
+                  "state": "nominal"
+                }
+              ],
+              "reason": "SINR signal clarity",
+              "staleState": "neutral",
+              "staleMs": 30000
+            }
+          ],
+          "footer": [
+            {
+              "label": "SINR",
+              "path": "networking.lte.sinr",
+              "unit": "dB"
+            },
+            {
+              "label": "RSRQ",
+              "path": "networking.lte.rsrq",
+              "unit": "dB"
+            },
+            {
+              "label": "Bars",
+              "path": "networking.lte.bars"
+            }
+          ]
+        },
+        {
+          "id": "huaweiConnection",
+          "label": "Cellular",
+          "size": "1x1",
+          "checks": [
+            {
+              "type": "stateMatch",
+              "path": "networking.lte.connectionText",
+              "map": [
+                {
+                  "value": "No service",
+                  "state": "red"
+                }
+              ],
+              "default": "green",
+              "display": true,
+              "staleState": "neutral",
+              "staleMs": 120000
+            }
+          ],
+          "footer": [
+            {
+              "label": "Type",
+              "path": "networking.lte.connectionType"
+            },
+            {
+              "label": "Band",
+              "path": "networking.lte.curBand"
+            },
+            {
+              "label": "Operator",
+              "path": "networking.lte.registerNetworkDisplay"
+            }
+          ]
+        },
+        {
+          "id": "huaweiPlan",
+          "label": "Data plan",
+          "size": "1x1",
+          "checks": [
+            {
+              "type": "banded",
+              "path": "networking.lte.plan.usedRatio",
+              "high": {
+                "warn": 0.8,
+                "crit": 0.95,
+                "warnState": "amber",
+                "critState": "red"
+              },
+              "unit": "ratio",
+              "reason": "Share of the data plan used",
+              "staleState": "neutral",
+              "staleMs": 300000
+            }
+          ],
+          "displayParts": [
+            {
+              "path": "networking.lte.plan.remainingBytes",
+              "unit": "B"
+            }
+          ],
+          "footer": [
+            {
+              "label": "Used",
+              "path": "networking.lte.plan.usedBytes",
+              "unit": "B"
+            },
+            {
+              "label": "Total",
+              "path": "networking.lte.plan.totalBytes",
+              "unit": "B"
+            },
+            {
+              "label": "Resets",
+              "path": "networking.lte.plan.periodEnd"
+            }
+          ]
+        },
+        {
+          "id": "huaweiRouterLink",
+          "label": "Router link",
+          "size": "1x1",
+          "checks": [
+            {
+              "type": "stateMatch",
+              "path": "networking.lte.routerLink",
+              "map": [
+                {
+                  "value": "ok",
+                  "state": "green"
+                },
+                {
+                  "value": "connecting",
+                  "state": "neutral"
+                },
+                {
+                  "value": "unreachable",
+                  "state": "amber"
+                },
+                {
+                  "value": "auth-failed",
+                  "state": "red"
+                }
+              ],
+              "default": "neutral",
+              "display": true,
+              "staleState": "neutral",
+              "staleMs": 300000
+            }
+          ],
+          "footer": [
+            {
+              "label": "Uptime",
+              "path": "networking.modem.uptime",
+              "unit": "s"
+            },
+            {
+              "label": "WAN IP",
+              "path": "networking.wan.ip"
+            }
+          ]
+        },
+        {
+          "id": "huaweiSms",
+          "label": "SMS",
+          "size": "1x1",
+          "checks": [
+            {
+              "type": "banded",
+              "path": "networking.lte.sms.unread",
+              "high": {
+                "warn": 0,
+                "warnState": "opportunity"
+              },
+              "display": true,
+              "reason": "Unread text messages",
+              "staleState": "neutral",
+              "staleMs": 300000
+            }
+          ],
+          "footer": [
+            {
+              "label": "Last",
+              "path": "networking.lte.lastMessage"
+            },
+            {
+              "label": "At",
+              "path": "networking.lte.lastMessageTime"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
