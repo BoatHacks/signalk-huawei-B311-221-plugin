@@ -89,12 +89,17 @@ Shapes follow SPEC §4. TypeScript types (or JSDoc typedefs) in
 ### 3.1 `radioQuality`
 
 `networking.lte.radioQuality` (0-1) is the quality figure other LTE
-plugins also publish; here it is computed from RSRP and SINR in dB:
-each mapped linearly onto 0-1 between a poor and a good anchor
-(RSRP -120..-80 dBm, SINR 0..20 dB, clamped), then the lower of the two
-is used, since either one being bad makes the link bad. The anchors are
-the same ones used for the `zones` in `meta`, so tiles and the number
-agree. Exact anchors are tunable constants in one file.
+plugins also publish; here it is computed from RSRP and SINR in dB: each
+mapped linearly onto 0-1 between a poor and a good anchor (RSRP
+-120..-80 dBm, SINR 0..20 dB, clamped), then the lower of the two is used,
+since either one being bad makes the link bad. If only one is available
+that one is used. The anchors are constants in `src/radio-quality.ts`.
+
+They are **not** the `meta.zones` thresholds. The zones are where the
+server (and the Status Tiles signal tile) change state: RSRP warn below
+-105 dBm and alarm below -115 dBm, SINR warn below 5 dB and alarm below
+0 dB (`src/paths.ts`). `test/tiles-zones-sync.test.ts` keeps the tile's
+inline zones identical to the published ones.
 
 ## 4. Technology Stack
 
