@@ -43,6 +43,10 @@ export const FIELDS = {
     roaming: ["roamingstatus", "roaming"], // 1 = roaming
     serviceStatus: ["servicestatus"], // 2 = valid service
     networkTypeCode: ["currentnetworktype", "currentnetworktypeex"], // 0 = none
+  },
+  // device/information. The WAN address and the router's uptime (seconds
+  // since boot) are not in monitoring/status on a real B311-221.
+  info: {
     wanIp: ["wanipaddress", "wanip"],
     uptime: ["uptime"],
   },
@@ -188,7 +192,10 @@ export type ConnectionDetails = ConnectionStatus & { networkType?: string };
  * non-zero network type, then "connected or showing signal bars". With no
  * fields at all it is false.
  */
-export function parseConnection(obj: unknown): ConnectionDetails {
+export function parseConnection(
+  obj: unknown,
+  info?: unknown,
+): ConnectionDetails {
   const f = FIELDS.status;
   const code = parseInteger(pick(obj, f.connectionStatus));
   const connected = code === CONNECTED;
@@ -207,8 +214,8 @@ export function parseConnection(obj: unknown): ConnectionDetails {
     serviceAvailable,
     roaming: roamingRaw === undefined ? undefined : roamingRaw === 1,
     bars,
-    wanIp: pickText(obj, f.wanIp),
-    uptimeSeconds: parseInteger(pick(obj, f.uptime)),
+    wanIp: pickText(info, FIELDS.info.wanIp),
+    uptimeSeconds: parseInteger(pick(info, FIELDS.info.uptime)),
     networkType: networkTypeFromCode(pick(obj, f.networkTypeCode)),
   });
 }

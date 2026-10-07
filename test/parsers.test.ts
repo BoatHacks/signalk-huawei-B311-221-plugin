@@ -104,7 +104,6 @@ test("parseConnection: connected with service", () => {
     serviceAvailable: true,
     roaming: false,
     bars: 4,
-    wanIp: "203.0.113.7",
     networkType: "LTE",
   });
 });

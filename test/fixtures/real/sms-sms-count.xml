@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+	<LocalUnread>33</LocalUnread>
+	<LocalInbox>87</LocalInbox>
+	<LocalOutbox>1</LocalOutbox>
+	<LocalDraft>0</LocalDraft>
+	<LocalDeleted>0</LocalDeleted>
+	<SimUnread>0</SimUnread>
+	<SimInbox>0</SimInbox>
+	<SimOutbox>0</SimOutbox>
+	<SimDraft>0</SimDraft>
+	<LocalMax>500</LocalMax>
+	<SimMax>0</SimMax>
+	<SimUsed>0</SimUsed>
+	<NewMsg>0</NewMsg>
+</response>

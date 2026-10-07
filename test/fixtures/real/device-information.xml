@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+<DeviceName>B311-221</DeviceName>
+<SerialNumber>XXXXXXXXXXXXXXXX</SerialNumber>
+<Imei>000000000000000</Imei>
+<Imsi>000000000000000</Imsi>
+<Iccid>0000000000000000000</Iccid>
+<Msisdn></Msisdn>
+<HardwareVersion>WL5B311M_A</HardwareVersion>
+<SoftwareVersion>11.0.2.2&#40;H697SP2C983&#41;</SoftwareVersion>
+<WebUIVersion>WEBUI 11.0.2.1&#40;W2SP8C7110&#41;</WebUIVersion>
+<MacAddress1>00:00:00:00:00:00</MacAddress1>
+<MacAddress2></MacAddress2>
+<WanIPAddress>10.20.153.229</WanIPAddress>
+<wan_dns_address>203.0.113.1,203.0.113.2</wan_dns_address>
+<WanIPv6Address></WanIPv6Address>
+<wan_ipv6_dns_address></wan_ipv6_dns_address>
+<ProductFamily>LTE</ProductFamily>
+<Classify>cpe</Classify>
+<supportmode>LTE|WCDMA|GSM</supportmode>
+<workmode>LTE</workmode>
+<submask>255.255.255.255</submask>
+<Mccmnc>21422</Mccmnc>
+<iniversion>B311-221-CUST 11.0.1.2&#40;C1217&#41;</iniversion>
+<uptime>153657</uptime>
+<ImeiSvn>08</ImeiSvn>
+<WifiMacAddrWl0>00:00:00:00:00:00</WifiMacAddrWl0>
+<WifiMacAddrWl1></WifiMacAddrWl1>
+<spreadname_en>HUAWEI 4G Router 2</spreadname_en>
+<spreadname_zh>华为4G路由 2</spreadname_zh>
+</response>

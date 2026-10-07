@@ -34,6 +34,7 @@ const ALLOWED_GET = new Set([
   "webserver/token",
   "webserver/SesTokInfo",
   "user/state-login",
+  "device/information",
   "device/signal",
   "net/current-plmn",
   "monitoring/status",
@@ -241,9 +242,18 @@ export class RouterClient {
   }
 
   getConnection(): Promise<ConnectionDetails> {
-    return this.enqueue(async () =>
-      parseConnection(await this.call("GET", "monitoring/status")),
-    );
+    return this.enqueue(async () => {
+      const status = await this.call("GET", "monitoring/status");
+      // WAN address and uptime come from device/information. Losing that
+      // answer must not lose the link state, so a failure only drops them.
+      let info: unknown;
+      try {
+        info = await this.call("GET", "device/information");
+      } catch (e) {
+        if (!(e instanceof BadResponse)) throw e;
+      }
+      return parseConnection(status, info);
+    });
   }
 
   getTraffic(): Promise<TrafficSample> {

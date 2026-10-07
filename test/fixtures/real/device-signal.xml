@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+<pci>69</pci>
+<sc></sc>
+<cell_id>12345678</cell_id>
+<rsrq>-7.0dB</rsrq>
+<rsrp>-83dBm</rsrp>
+<rssi>-59dBm</rssi>
+<sinr>2dB</sinr>
+<rscp></rscp>
+<ecio></ecio>
+<mode>7</mode>
+<ulbandwidth>10MHz</ulbandwidth>
+<dlbandwidth>10MHz</dlbandwidth>
+<txpower>PPusch:6dBm PPucch:-13dBm PSrs:0dBm PPrach:-6dBm</txpower>
+<tdd></tdd>
+<ul_mcs>mcsUpCarrier1:23</ul_mcs>
+<dl_mcs>mcsDownCarrier1Code0:0 mcsDownCarrier1Code1:0</dl_mcs>
+<earfcn>DL:50 UL:18050</earfcn>
+<rrc_status></rrc_status>
+<rac></rac>
+<lac></lac>
+<tac>1234</tac>
+<band>1</band>
+<nei_cellid></nei_cellid>
+<plmn>21422</plmn>
+<ims>0</ims>
+<wdlfreq></wdlfreq>
+<lteulfreq>19250</lteulfreq>
+<ltedlfreq>21150</ltedlfreq>
+<transmode>TM[4]</transmode>
+<enodeb_id>0123456</enodeb_id>
+<cqi0>12</cqi0>
+<cqi1>127</cqi1>
+<ulfrequency>1925000kHz</ulfrequency>
+<dlfrequency>2115000kHz</dlfrequency>
+<arfcn></arfcn>
+<bsic></bsic>
+<rxlev></rxlev>
+</response>

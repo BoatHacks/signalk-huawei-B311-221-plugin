@@ -116,6 +116,17 @@ test("getSignal, getOperator, getConnection parse the router's answers", async (
     assert.equal(c.connected, true);
     assert.equal(c.serviceAvailable, true);
     assert.equal(c.bars, 4);
+    assert.equal(c.wanIp, "100.75.91.205");
+    assert.equal(c.uptimeSeconds, 86400);
+  });
+});
+
+test("getConnection survives a device/information answer it cannot use", async () => {
+  const extra = { "device/information": "not xml" };
+  await withRouter({ extra }, async (_router, make) => {
+    const c = await make().getConnection();
+    assert.equal(c.connected, true);
+    assert.equal(c.wanIp, undefined);
   });
 });
 

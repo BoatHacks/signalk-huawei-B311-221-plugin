@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+<StartDay>23</StartDay>
+<DataLimit>120GB</DataLimit>
+<DataLimitAwoke>0</DataLimitAwoke>
+<MonthThreshold>90</MonthThreshold>
+<DayThreshold>90</DayThreshold>
+<SetMonthData>1</SetMonthData>
+<trafficmaxlimit>128849018880</trafficmaxlimit>
+<turnoffdataenable>0</turnoffdataenable>
+<turnoffdataswitch>0</turnoffdataswitch>
+<turnoffdataflag>0</turnoffdataflag>
+</response>

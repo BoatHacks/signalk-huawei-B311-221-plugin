@@ -1,3 +1,3 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SYNTHETIC: hand-written, NOT recorded from a router. Field names are guesses (SPEC 13.1). -->
-<response><ConnectionStatus>901</ConnectionStatus><SignalIcon>4</SignalIcon><CurrentNetworkType>19</CurrentNetworkType><RoamingStatus>0</RoamingStatus><ServiceStatus>2</ServiceStatus><WanIPAddress>203.0.113.7</WanIPAddress></response>
+<response><ConnectionStatus>901</ConnectionStatus><SignalIcon>4</SignalIcon><CurrentNetworkType>19</CurrentNetworkType><RoamingStatus>0</RoamingStatus><ServiceStatus>2</ServiceStatus></response>

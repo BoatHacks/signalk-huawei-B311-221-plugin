@@ -25,7 +25,7 @@ const errorXml = (code) =>
 
 const DATA = {
   "device/information": xml(
-    `<DeviceName>B311-221</DeviceName><SerialNumber>${SENSITIVE.serial}</SerialNumber><Imei>${SENSITIVE.imei}</Imei><Imsi>262011234567890</Imsi><HardwareVersion>WL1B310M</HardwareVersion><SoftwareVersion>21.318.03.00.01</SoftwareVersion><WebUIVersion>WEBUI 17.0.1.2</WebUIVersion><MacAddress1>${SENSITIVE.mac}</MacAddress1><WanIPAddress>${SENSITIVE.wanIp}</WanIPAddress>`,
+    `<DeviceName>B311-221</DeviceName><SerialNumber>${SENSITIVE.serial}</SerialNumber><Imei>${SENSITIVE.imei}</Imei><Imsi>262011234567890</Imsi><HardwareVersion>WL1B310M</HardwareVersion><SoftwareVersion>21.318.03.00.01</SoftwareVersion><WebUIVersion>WEBUI 17.0.1.2</WebUIVersion><MacAddress1>${SENSITIVE.mac}</MacAddress1><WanIPAddress>${SENSITIVE.wanIp}</WanIPAddress><uptime>86400</uptime>`,
   ),
   "device/basic_information": xml("<productfamily>LTE</productfamily>"),
   "device/boot_time": xml("<boot_time>86400</boot_time>"),
@@ -36,7 +36,7 @@ const DATA = {
   "net/current-plmn": xml("<FullName>Telia</FullName><Numeric>24001</Numeric>"),
   "net/net-mode": xml("<NetworkMode>03</NetworkMode>"),
   "monitoring/status": xml(
-    `<ConnectionStatus>901</ConnectionStatus><SignalIcon>4</SignalIcon><WanIPAddress>${SENSITIVE.wanIp}</WanIPAddress>`,
+    `<ConnectionStatus>901</ConnectionStatus><SignalIcon>4</SignalIcon>`,
   ),
   "monitoring/converged-status": xml("<SimState>257</SimState>"),
   "monitoring/traffic-statistics": xml(

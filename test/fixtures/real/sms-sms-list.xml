@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+<Count>5</Count>
+<Messages>
+
+		<Message>
+			<Smstat>0</Smstat>
+			<Index>40088</Index>
+			<Phone>DIGI</Phone>
+			<Content>xxxx: xx xxxxxxxxx xx 00 xx, 000 xxxxxxx xxxxxxxxxxxxxxx, xxxxxxxx xxxxxxxxxx xxxxxxxxxx x 0000 xxx x xxxxxxx xxxx. xxxxxxxx xx xxxxxxx xx xx xxxx xxxxx://xxxxxx.xxxxxxxxx.xx x xxxxxxxx *000#</Content>
+			<Date>2026-10-05 17:45:11</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>2</SmsType>
+		</Message>
+		<Message>
+			<Smstat>0</Smstat>
+			<Index>40083</Index>
+			<Phone>DIGI</Phone>
+			<Content>xxxx: xxx xxxxxxxxx xx xxxxx xx 00,00 xxxxx. xxxx xxxxxxxxx xx xxxxx xxxxxxxxxx xxxxx xx xx xxxx xxxxx://xxxxxx.xxxxxxxxx.xx x xxxxx *000#</Content>
+			<Date>2026-10-05 17:41:04</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>1</SmsType>
+		</Message>
+		<Message>
+			<Smstat>0</Smstat>
+			<Index>40086</Index>
+			<Phone>DIGI</Phone>
+			<Content>xxxx: xxxx xxxxxxx x xx xxxx, xxxxx xxxxxxxxxx xx xxxxxxxxx xxx xx xxxxxxx xxxxxx: 000000. xxx xx xxxxxxxxx, xx xxxxxxxxx xxxx xxx xxx xxxxx, xx xxxx xxxxx xx xxxxxxxxxx xxxxxxxxxxx xxxx xxxxxx.</Content>
+			<Date>2026-10-05 17:36:17</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>2</SmsType>
+		</Message>
+		<Message>
+			<Smstat>1</Smstat>
+			<Index>40085</Index>
+			<Phone>00000</Phone>
+			<Content>xxxx: xxxxxx xx xxxxx xxxxxxxx xx xx xxxx xxxxx://xxxxxx.xxxxxxxxx.xx x xxxxxxxx *000# xxxxx xx 00/00/0000 x xxx 00:00 xxxx xxxxxx xxxxxx xxx xxxxx xxxxxxxxxx xxx xxx xxxxxx</Content>
+			<Date>2026-08-20 13:07:23</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>2</SmsType>
+		</Message>
+		<Message>
+			<Smstat>1</Smstat>
+			<Index>40084</Index>
+			<Phone>00000</Phone>
+			<Content>xxxx: xxxxxx xx xxxxx xxxxxxxx xx xx xxxx xxxxx://xxxxxx.xxxxxxxxx.xx x xxxxxxxx *000# xxxxx xx 00/00/00 x xxx 00:00 xxxx xxxxxx xxxxxx xxx xxxxx xxxxxxxxxx xxx xxx xxxxxx</Content>
+			<Date>2026-08-19 13:07:12</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>2</SmsType>
+		</Message>
+	</Messages>
+</response>
