@@ -1,10 +1,12 @@
 # Time and token ledger
 
-Raw numbers for the work on this plugin, kept in the repo so they can be
-copied into whatever time tracking you use. **I could not find a
-"laserbrain timetracking" tool, skill or file in this environment**, so this
-is a neutral ledger, not an integration (see Q8 in OPEN_QUESTIONS.md). Tell
-me the target and its format and I will export or post to it.
+Raw working notes for the time and token numbers of this plugin. **The
+system of record is the BoatHacks time-tracking log**, `TIME-TRACKING.md` in
+[BoatHacks/laserbrain](https://github.com/BoatHacks/laserbrain), where this
+project's rows were added on 2026-10-07 (commit `310b788`) in that log's own
+format: one row per task with durations from commit timestamps, one row per
+subagent with its own token budget, and a session-totals row. This file keeps
+the working detail behind them.
 
 Sources: the session record (`get_session`) for the main session, and the
 completion notices of each subagent for theirs. Nothing here is estimated;
@@ -38,7 +40,8 @@ durations overlap and must not be added to wall-clock time.
 | Publisher, paths, radioQuality | 89,615 | 2 min 10 s |
 | Webapp (with screenshots) | 94,169 | 3 min 35 s |
 | RouterClient and parsers | 169,865 | 7 min 39 s |
-| **Subtotal** | **585,253** | **18 min 14 s of agent time** |
+| Independent code review (forked skill run) | ~107k, derived from its transcript | 2 min 10 s |
+| **Subtotal** | **~692k** | **~20 min 24 s of agent time** |
 
 ## Harness token budget
 
@@ -69,3 +72,17 @@ Each automatic resume appends one line: time (UTC), what ran, usage from
 | 2026-10-06 23:35 | Independent code review of the whole branch (a forked review run; its own token use is not reported), then fixes for nine findings, test-first; docs, ledger; routine disabled | counter still unchanged (89,836 in / 61,325 out); wall clock 1 h 10 min since start | harness budget used 121,744 since start |
 | 2026-10-07 00:20 | Installed a local Signal K server (2.33), tested the plugin on it incl. security, Status Tiles and a real browser; wrote and proved `scripts/dev-server.sh`; webapp 401 fix | session counter still frozen at 89,836 in / 61,325 out | harness budget at 14,939,900 left of 15,000,000 (about 60,100 consumed in this task; the budget counter restarts at 15,000,000 on each new request) |
 
+
+## Real main-thread figures (from the session transcript)
+
+The session record's own usage and context counters stayed frozen all
+session (89,836 in / 61,325 out; 193,004 of 1,000,000), so the figures used
+in the laserbrain log come from the session transcript instead, as of
+2026-10-07 07:25 UTC: 249 API calls, all `claude-sonnet-5-5`; 315,531 output
+tokens; 1,063,985 cache-write; 82,460,245 cache-read (re-reads of the same
+context on every call, not new work); 502 uncached input; context window
+590,862 of 1,000,000 at the last call.
+
+The subagent token totals reported in completion notices match each agent's
+final context size to within about 2-3k, which is how the review run's figure
+was derived.
