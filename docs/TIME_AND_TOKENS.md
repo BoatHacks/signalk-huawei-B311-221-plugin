@@ -86,3 +86,5 @@ context on every call, not new work); 502 uncached input; context window
 The subagent token totals reported in completion notices match each agent's
 final context size to within about 2-3k, which is how the review run's figure
 was derived.
+
+The seven subagent transcripts (six build agents and the review run) are archived complete and unedited in `laserbrain/subagent-logs/signalk-huawei-B311-221-plugin/`, and each subagent row in `TIME-TRACKING.md` links its file.

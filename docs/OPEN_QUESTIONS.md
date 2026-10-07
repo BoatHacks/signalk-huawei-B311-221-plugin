@@ -65,7 +65,4 @@ Resolved: Q2 (does a Signal K server accept `zones` / `displayScale` in `meta` a
 
 Resolved: Q8 (where do time and token numbers go?). The tool is BoatHacks/laserbrain; this project's rows were added to its `TIME-TRACKING.md` (commit `310b788`), see `docs/TIME_AND_TOKENS.md`.
 
-| ID | Question | Recommendation | Blocks |
-|---|---|---|---|
-| Q10 | Archive the seven subagent transcripts (about 4 MB, complete and unedited, as the laserbrain README describes) under `laserbrain/subagent-logs/signalk-huawei-B311-221-plugin/`? The privacy concern about the account email is settled (private repo). What remains: each transcript carries sandbox environment settings and I could not check them for secrets, because that check was blocked by the permission system. | Your call: say "archive them as they are" and I will, or I can archive after you have looked at them | `laserbrain/subagent-logs/` |
-
+Resolved: Q10 (archive the subagent transcripts?). Archived as they are, with the owner's go-ahead, under `laserbrain/subagent-logs/signalk-huawei-B311-221-plugin/` (laserbrain commit `f8f3646`).
