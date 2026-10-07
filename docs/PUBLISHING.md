@@ -18,6 +18,22 @@ place except the steps below, which need an npm or GitHub account.
   password), so the registry's load/activate/schema checks have nothing to trip
   over.
 
+## CI evidence
+
+On commit `7823587` (2026-10-07) both workflows passed in full:
+
+- `Tests`: Node 20, 22 and 24 on Linux.
+- The registry's `SignalK Plugin CI`, all 13 jobs: Linux x64 and arm64, macOS and
+  Windows on Node 22 and 24; the Cerbo GX (armv7 under QEMU) job on Node 20; and
+  the integration job, which installs the plugin into a real Signal K server
+  (latest, Node 22 and 24) and checks it loads. Every step passed, including
+  package validation, entry-point load, `schema()`, the start/stop lifecycle,
+  "npm pack includes all required files", the deprecated-API scan, the Node 20
+  compatibility check, and the simulated App Store install.
+
+That is a good sign for the registry's load, activate and schema checks, but the
+registry's own score is only computed after publishing.
+
 ## Before the first release
 
 1. **Pick the version.** `package.json` says `0.0.0`. Use `0.1.0` for the first
