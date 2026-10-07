@@ -55,8 +55,12 @@ people is treated as untrusted and only ever shown as plain text.
 ```sh
 npm install
 npm run lint && npm run typecheck && npm test
-node scripts/capture-fixtures.mjs --help   # record real router responses
+scripts/dev-server.sh setup && scripts/dev-server.sh start   # local Signal K test server
+node scripts/capture-fixtures.mjs --help                     # record real router responses
 ```
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the test server and what has
+been verified against a real one.
 
 Design documents are in [docs/](docs/): [SPEC](docs/SPEC.md),
 [ARCHITECTURE](docs/ARCHITECTURE.md), [decisions and open

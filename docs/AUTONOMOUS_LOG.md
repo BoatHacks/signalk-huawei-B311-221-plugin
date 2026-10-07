@@ -40,4 +40,5 @@ Blocked on the user or hardware
 - 2026-10-06 23:20: C done and verified (279 tests green). Next: J plugin wiring per docs/plans/plugin-wiring.md, then K, L.
 - 2026-10-06 23:25: J (wiring, end-to-end tests, built-package smoke test), K and L done. 293 tests green, lint and typecheck clean. Everything left needs the real router or a real Signal K server (Q1-Q4, Q9) or your decisions: the routine can be disabled.
 - 2026-10-06 23:35: independent code review of the whole branch (10 findings). Nine were real and are fixed test-first (D32-D37, 310 tests green); one (two runtimes overlapping on restart) is not a problem because the Signal K server awaits `stop()` before calling `start()` (checked in the server's plugin code). Nothing left that can be done without the real router, a real Signal K server, or your answers: the routine is disabled.
+- 2026-10-07 00:20: local Signal K test server installed and scripted (`scripts/dev-server.sh`); Q2 resolved against a real server; webapp 401-on-write fixed (D38).
 

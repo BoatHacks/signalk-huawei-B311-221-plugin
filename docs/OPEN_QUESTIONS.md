@@ -46,13 +46,14 @@ code and docs get updated.
 | D35 | Delete or mark-read of an SMS | The plugin re-reads the router's list first and refuses with 409 ("changed on the router, refresh") if that exact message is no longer at that index | The router reuses indexes, so a stale list could delete the wrong message | `src/runtime.ts` |
 | D36 | Send not confirmed | If the router accepts a message but never confirms it went out, the API answers `status: "unknown"` and the page shows an orange warning and keeps the draft | "Sent" would have been a guess | `src/runtime.ts`, `public/` |
 | D37 | SMS notifications | Cleared when the message is read, deleted, or disappears from the router; the "connecting" link state raises no notification | They used to stay in alert forever | `src/runtime.ts` |
+| D38 | A refused write in the webapp | A 401 on a write while reads work means "admin rights required" (the Signal K server answers a signed-in non-admin with 401, not 403); with reads failing it means "log in" | Found by testing against a real server | `public/lib/format.js` (`writeDenial`) |
+| D39 | Local test server | Built outside the repo by `scripts/dev-server.sh`, against a mock router with synthetic data, with throwaway test users for `secure` | Never needs a real router; never a dependency | `scripts/dev-server.sh`, `docs/DEVELOPMENT.md` |
 
 ## Open questions (need you or the hardware)
 
 | ID | Question | Recommendation | Blocks |
 |---|---|---|---|
 | Q1 | Real router responses: field names, login mode, timings | Run `scripts/capture-fixtures.mjs` on the boat network (see `scripts/README.md`) | Pinning parsers, fixtures |
-| Q2 | Does your Signal K server accept `zones` / `displayScale` in delta `meta` and raise the zone notifications? | Try the plugin on a server once available | SPEC §13.2 |
 | Q3 | SMS encoding for non-ASCII text, behaviour with concurrent sessions | Test with the real router | SPEC §13.3 |
 | Q4 | Does the router list the whole SMS inbox in one page? The SMS cache is replaced from each poll, so a partial page would drop messages from other pages | Verify with a real inbox of more than 5 messages | `src/sms-store.ts` cache |
 | Q5 | Are the tile stale times (D16) right for the real polling rates? Router link, plan and SMS paths must be re-emitted at least every 5 minutes | Publish these paths on every poll, not only on change | Tile accuracy |
@@ -60,3 +61,5 @@ code and docs get updated.
 | Q7 | The webapp's phone layout clips the last SMS in the list box, and has no tabs | Fine for now; refine after seeing real use | `public/lib/styles.js` |
 | Q8 | What is "laserbrain timetracking" and where should token and time numbers go? I found no tool, skill or file by that name. | Keep `docs/TIME_AND_TOKENS.md` as the source of truth until you tell me the target and format; then export from it | Time and token reporting |
 | Q9 | Is the router's date really server-local time with no timezone, and does `CurrentConnectTime` (traffic statistics) give connection uptime? | Check in the first real capture | `src/parsers.ts`, `networking.modem.uptime` |
+
+Resolved: Q2 (does a Signal K server accept `zones` / `displayScale` in `meta` and raise the zone notifications?) is answered yes by a real server, see `docs/DEVELOPMENT.md`.

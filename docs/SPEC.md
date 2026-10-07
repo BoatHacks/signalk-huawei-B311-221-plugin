@@ -340,6 +340,11 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 - **Webapp mirrors Status Tiles' look, vanilla and fully vendored.**
   Matches the display the user already has on the boat, and works with
   no internet.
+- **Weak-signal notifications come from `meta.zones`, raised by the server.**
+  Verified on Signal K server 2.33: it accepts `zones` and `displayScale` in
+  delta `meta` and sets `notifications.networking.lte.rsrp` itself (normal at
+  -98 dBm, warn at -110 dBm), so the plugin raises no signal notification of
+  its own.
 - **No zeroing of paths on outage.** Stale timestamps are the truthful
   signal.
 
@@ -351,7 +356,6 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
    supply fixtures later). Until then every response field name is
    unverified and the client is built against the library's protocol
    only.
-2. **Server handling of `meta`**: confirm on a running server that `zones` and `displayScale` published via delta `meta` are accepted and that the server-generated zone notifications appear under the expected path.
-3. **Router API**: SMS encoding for non-ASCII text, concurrent-session
+2. **Router API**: SMS encoding for non-ASCII text, concurrent-session
    behaviour and counter semantics still need confirming on a real
    device. See ARCHITECTURE §5.1.

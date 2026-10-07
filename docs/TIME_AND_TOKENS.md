@@ -67,3 +67,5 @@ Each automatic resume appends one line: time (UTC), what ran, usage from
 |---|---|---|---|
 | 2026-10-06 23:25 | Built the router client's review, plugin runtime, routes wiring, package checks, docs; went from supervised to running alone | counter unchanged from the first snapshot (89,836 in / 61,325 out); not updating mid-run | none visible |
 | 2026-10-06 23:35 | Independent code review of the whole branch (a forked review run; its own token use is not reported), then fixes for nine findings, test-first; docs, ledger; routine disabled | counter still unchanged (89,836 in / 61,325 out); wall clock 1 h 10 min since start | harness budget used 121,744 since start |
+| 2026-10-07 00:20 | Installed a local Signal K server (2.33), tested the plugin on it incl. security, Status Tiles and a real browser; wrote and proved `scripts/dev-server.sh`; webapp 401 fix | session counter still frozen at 89,836 in / 61,325 out | harness budget at 14,939,900 left of 15,000,000 (about 60,100 consumed in this task; the budget counter restarts at 15,000,000 on each new request) |
+
