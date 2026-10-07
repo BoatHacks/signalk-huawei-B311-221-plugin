@@ -9,7 +9,9 @@ import {
   loadExamples,
 } from "../src/tiles-provider.ts";
 
-const STATUS_TILES_DIR = "/home/user/meri-imperiumi/signalk-status-tiles";
+// Optional: a checkout of signalk-status-tiles to validate against. Set
+// STATUS_TILES_DIR to its path; without it those tests are skipped.
+const STATUS_TILES_DIR = process.env.STATUS_TILES_DIR ?? "";
 const PLUGIN_ID = "signalk-huawei-b311-221";
 
 /** Every path a tile may reference: SPEC §6.1. */
@@ -225,13 +227,15 @@ interface Registered {
 function fakeApp(withRegistry = true) {
   const registered: Registered[] = [];
   const errors: string[] = [];
+  const debugs: string[] = [];
   const app = {
     error: (m: string) => errors.push(m),
+    debug: (m: string) => debugs.push(m),
     ...(withRegistry
       ? { registerResourceProvider: (p: Registered) => registered.push(p) }
       : {}),
   } as unknown as ServerAPI;
-  return { app, registered, errors };
+  return { app, registered, errors, debugs };
 }
 
 test("provider registers once as statusTileExamples and is gated by running", async () => {
@@ -271,11 +275,13 @@ test("provider is read-only", async () => {
 });
 
 test("provider tolerates a server without registerResourceProvider", () => {
-  const { app, errors } = fakeApp(false);
+  const { app, errors, debugs } = fakeApp(false);
   const p = createTilesProvider(app, { pluginId: PLUGIN_ID });
   assert.doesNotThrow(() => p.start());
   assert.doesNotThrow(() => p.stop());
-  assert.equal(errors.length, 1);
+  // An older server without the registry is normal, not an error.
+  assert.equal(errors.length, 0);
+  assert.equal(debugs.length, 1);
 });
 
 test("provider swallows a registration failure", () => {
@@ -292,7 +298,9 @@ test("provider swallows a registration failure", () => {
 // --- Status Tiles' own validator (skipped without the clone) ---
 
 test("set validates with Status Tiles' own validator", {
-  skip: !existsSync(`${STATUS_TILES_DIR}/public/lib/config.js`),
+  skip:
+    !STATUS_TILES_DIR ||
+    !existsSync(`${STATUS_TILES_DIR}/public/lib/config.js`),
 }, async () => {
   const cfg = (await import(
     pathToFileURL(`${STATUS_TILES_DIR}/public/lib/config.js`).href

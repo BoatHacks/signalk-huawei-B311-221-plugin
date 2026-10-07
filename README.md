@@ -18,7 +18,7 @@ and lets you read and send SMS from a small web page.
 - **Signal and connection data** under `networking.lte.*`: RSRP, RSRQ, SINR,
   RSSI (dBm / dB), bars, a 0-1 `radioQuality`, operator, network type, band,
   cell, roaming, WAN IP, router uptime. Paths follow the existing LTE plugins
-  where they overlap (netgear, teltonika), so `signalk-internet` and similar
+  where they overlap (netgear, teltonika), so [`@meri-imperiumi/signalk-internet`](https://www.npmjs.com/package/@meri-imperiumi/signalk-internet) and similar
   consumers keep working. Weak-signal notifications come from the paths'
   `meta.zones`, raised by the server.
 - **Data plan tracking.** Set your plan size and reset day; the plugin counts
@@ -65,6 +65,12 @@ been verified against a real one.
 Design documents are in [docs/](docs/): [SPEC](docs/SPEC.md),
 [ARCHITECTURE](docs/ARCHITECTURE.md), [decisions and open
 questions](docs/OPEN_QUESTIONS.md), and the [plans](docs/plans/).
+
+## Requirements
+
+Signal K server with Node.js 20.19 or newer (tested on 20, 22 and 24). On
+servers older than the ones that introduced `router.access()` for plugin
+routes, the status and SMS-list routes fall back to admin-only.
 
 ## Licence
 

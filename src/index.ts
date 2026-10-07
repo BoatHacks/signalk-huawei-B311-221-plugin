@@ -66,7 +66,10 @@ export default function createPlugin(
       const { config, errors } = normalizeConfig(rawConfig);
       tiles.start();
       if (!config.password) {
-        app.setPluginError(errors.join("; "));
+        // A fresh install has no password yet: say what is needed, not an error.
+        app.setPluginStatus(
+          "Waiting for the router's admin password in the plugin settings",
+        );
         return;
       }
       if (errors.length > 0)

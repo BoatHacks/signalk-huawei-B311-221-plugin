@@ -21,9 +21,11 @@ export interface Res {
 type Handler = (req: Req, res: Res) => unknown;
 
 export interface RouterLike {
-  access(level: "readonly" | "readwrite"): {
+  /** Absent on older Signal K servers, whose plugin routes are all admin-only. */
+  access?(level: "readonly" | "readwrite"): {
     get(path: string, ...handlers: Handler[]): unknown;
   };
+  get(path: string, ...handlers: Handler[]): unknown;
   post(path: string, ...handlers: Handler[]): unknown;
   delete(path: string, ...handlers: Handler[]): unknown;
 }
@@ -40,6 +42,7 @@ export interface RoutesDeps {
     send(
       to: string,
       text: string,
+      // biome-ignore lint/suspicious/noConfusingVoidType: implementations and fakes may return nothing
     ): Promise<{ status: "sent" | "unknown" } | void>;
     /** Take the whole message so the action can check it still exists unchanged. */
     markRead(message: SmsMessage): Promise<void>;
@@ -168,7 +171,10 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
     return found;
   };
 
-  const readonly = router.access("readonly");
+  // Older servers have no router.access(): reads then fall back to the plain
+  // router, which that server treats as admin-only. Safe, just stricter.
+  const readonly =
+    typeof router.access === "function" ? router.access("readonly") : router;
   readonly.get("/status", (_req, res) => res.json(deps.getStatus()));
   readonly.get("/sms", (req, res) => {
     const n = Number(req.query?.limit);
@@ -191,7 +197,7 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
       const result = await deps.actions.send(to, text);
       return res.json({
         ok: true,
-        status: (result && result.status) || "sent",
+        status: (result ? result.status : undefined) ?? "sent",
       });
     }),
   );
@@ -242,9 +248,11 @@ export function withAvailability(
         : res.status(503).json({ error: "The plugin is not running" });
   return {
     access: (level) => {
-      const scoped = router.access(level);
+      const scoped =
+        typeof router.access === "function" ? router.access(level) : router;
       return { get: (path, ...hs) => scoped.get(path, ...hs.map(wrap)) };
     },
+    get: (path, ...hs) => router.get(path, ...hs.map(wrap)),
     post: (path, ...hs) => router.post(path, ...hs.map(wrap)),
     delete: (path, ...hs) => router.delete(path, ...hs.map(wrap)),
   };

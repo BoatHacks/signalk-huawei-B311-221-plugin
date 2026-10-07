@@ -886,11 +886,15 @@ test("sendSms stamps the Date in the server's local time, the way router dates a
     await withRouter({}, async (router, make) => {
       await make({ now: () => at }).sendSms("+1555", "hi");
       const expected = formatRouterDate(at);
-      assert.notEqual(
-        expected,
-        "2024-02-03 04:05:06",
-        "the zone really differs from UTC",
-      );
+      // Setting TZ at run time does not work on every platform (notably
+      // Windows); only insist the zone differs from UTC where it took effect.
+      if (new Date(at).getTimezoneOffset() !== 0) {
+        assert.notEqual(
+          expected,
+          "2024-02-03 04:05:06",
+          "the zone really differs from UTC",
+        );
+      }
       assert.match(
         router.sent[0]?.raw ?? "",
         new RegExp(`<Date>${expected}</Date>`),

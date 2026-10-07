@@ -16,6 +16,7 @@
   "files": [
     "dist/",
     "public/",
+    "docs/images/",
     "status-tiles-examples.json"
   ],
   "scripts": {
@@ -23,7 +24,7 @@
     "typecheck": "tsc --noEmit",
     "format": "biome check --write src test scripts public",
     "lint": "biome check src test scripts public",
-    "test": "node --test --test-force-exit \"test/*.test.ts\" \"test/*.test.mjs\"",
+    "test": "node scripts/run-tests.mjs",
     "prepack": "npm run build"
   },
   "keywords": [
@@ -35,15 +36,24 @@
   ],
   "signalk": {
     "displayName": "Huawei B311-221 LTE",
-    "appIcon": "./icon.png"
+    "appIcon": "./icon.png",
+    "screenshots": [
+      "./docs/images/webapp.png",
+      "./docs/images/webapp-phone.png"
+    ],
+    "recommends": [
+      "@meri-imperiumi/signalk-status-tiles",
+      "@meri-imperiumi/signalk-internet"
+    ]
   },
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=20.19.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
     "@signalk/server-api": "^2.30.0",
     "@types/node": "^22.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.8.0"
   },
   "dependencies": {

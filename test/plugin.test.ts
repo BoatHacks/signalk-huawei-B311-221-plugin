@@ -120,13 +120,18 @@ test("the plugin exposes id, name and a schema that requires the password", () =
   assert.ok(schema.properties.plan);
 });
 
-test("without a password the plugin reports the problem and does not start a runtime", async () => {
+test("without a password the plugin says it is waiting for settings, as a status and not an error", async () => {
   const { app, log } = fakeApp();
   const { factory, created } = fakeRuntimeFactory();
   const plugin = createPlugin(app, { createRuntime: factory });
   plugin.start({}, () => {});
   assert.equal(created.length, 0);
-  assert.ok(log.errors.some((e) => /password/i.test(e)));
+  assert.equal(
+    log.errors.length,
+    0,
+    "a fresh install must not show a red error",
+  );
+  assert.ok(log.statuses.some((m) => /password/i.test(m)));
   await plugin.stop();
 });
 
@@ -138,7 +143,7 @@ test("a valid configuration builds and starts a runtime in the data directory", 
   assert.equal(created.length, 1);
   assert.equal(created[0]?.dataDir, "/tmp/signalk-huawei-test-data");
   assert.equal(
-    (created[0]?.config as { routerUrl: string }).routerUrl,
+    (created[0] as { config: { routerUrl: string } }).config.routerUrl,
     "http://192.168.8.1",
   );
   await new Promise((r) => setImmediate(r));
@@ -176,7 +181,8 @@ test("restarting builds a fresh runtime", async () => {
   plugin.start({ ...VALID, signalPollSeconds: 20 }, () => {});
   assert.equal(created.length, 2);
   assert.equal(
-    (created[1]?.config as { signalPollSeconds: number }).signalPollSeconds,
+    (created[1] as { config: { signalPollSeconds: number } }).config
+      .signalPollSeconds,
     20,
   );
   await plugin.stop();
@@ -206,5 +212,36 @@ test("the Status Tiles example set is offered while the plugin runs", async () =
   const plugin = createPlugin(app, { createRuntime: factory });
   plugin.start(VALID, () => {});
   assert.equal(log.providers, 1);
+  await plugin.stop();
+});
+
+test("routes still register on a server whose router has no access()", async () => {
+  const { app } = fakeApp();
+  const { factory } = fakeRuntimeFactory();
+  const plugin = createPlugin(app, { createRuntime: factory });
+  const handlers = new Map<string, Handler>();
+  const reg =
+    (m: string) =>
+    (path: string, ...hs: Handler[]) => {
+      handlers.set(`${m} ${path}`, hs.at(-1) as Handler);
+    };
+  const oldRouter = {
+    get: reg("GET"),
+    post: reg("POST"),
+    delete: reg("DELETE"),
+  };
+  assert.doesNotThrow(() => plugin.registerWithRouter?.(oldRouter as never));
+  for (const key of [
+    "GET /status",
+    "GET /sms",
+    "POST /sms",
+    "POST /sms/:id/read",
+    "DELETE /sms/:id",
+    "POST /plan/reset",
+  ]) {
+    assert.ok(handlers.has(key), key);
+  }
+  plugin.start(VALID, () => {});
+  assert.equal((await call(handlers.get("GET /status"))).statusCode, 200);
   await plugin.stop();
 });

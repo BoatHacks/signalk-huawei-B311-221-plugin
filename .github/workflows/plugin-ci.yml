@@ -1,0 +1,13 @@
+name: SignalK Plugin CI
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+jobs:
+  plugin-ci:
+    # Pinned to a release commit, never a branch. Bump the SHA and the comment
+    # together when a newer signalk-server release is out.
+    uses: SignalK/signalk-server/.github/workflows/plugin-ci.yml@41087af2a9d01440d1327f228c0bc649a62d7ed7 # v2.33.0
+    with:
+      enable-signalk-integration: true

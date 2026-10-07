@@ -1,0 +1,24 @@
+name: publish
+# Publishes to npm when a GitHub release is published, using npm trusted
+# publishing (OIDC): no NPM_TOKEN and no OTP. The very first publish of a new
+# package is manual, see docs/PUBLISHING.md.
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+  id-token: write # enables OIDC
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # npm >= 11.5 supports trusted publishing
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm publish # the build runs via prepack

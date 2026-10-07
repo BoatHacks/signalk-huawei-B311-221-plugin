@@ -53,7 +53,8 @@ export function createTilesProvider(
     if (registered) return;
     const registry = app as unknown as ResourceProviderRegistry;
     if (typeof registry.registerResourceProvider !== "function") {
-      app.error(
+      // Older servers have no registry; that is normal, not a fault.
+      app.debug(
         `[${pluginId}] server has no resource provider registry; Status Tiles examples disabled`,
       );
       return;
