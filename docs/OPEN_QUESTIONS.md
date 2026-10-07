@@ -48,18 +48,21 @@ code and docs get updated.
 | D37 | SMS notifications | Cleared when the message is read, deleted, or disappears from the router; the "connecting" link state raises no notification | They used to stay in alert forever | `src/runtime.ts` |
 | D38 | A refused write in the webapp | A 401 on a write while reads work means "admin rights required" (the Signal K server answers a signed-in non-admin with 401, not 403); with reads failing it means "log in" | Found by testing against a real server | `public/lib/format.js` (`writeDenial`) |
 | D39 | Local test server | Built outside the repo by `scripts/dev-server.sh`, against a mock router with synthetic data, with throwaway test users for `secure` | Never needs a real router; never a dependency | `scripts/dev-server.sh`, `docs/DEVELOPMENT.md` |
+| D40 | WAN IP and uptime source | `getConnection` also calls `device/information` (`WanIPAddress`, `uptime`); `monitoring/status` has neither on a real B311-221. If that second call fails with a bad answer, the link state is still published without them | Found by the first real capture; the mock router had put them in the wrong place | `src/router-client.ts`, `src/parsers.ts` |
+| D41 | Cell identifiers in committed fixtures | `cell_id`, `enodeb_id`, `tac`, `lac`, `cellinfo` replaced with made-up values of the same format | Together they locate the cell tower, so roughly where the boat was | `test/fixtures/real/README.md` |
 
 ## Open questions (need you or the hardware)
 
 | ID | Question | Recommendation | Blocks |
 |---|---|---|---|
-| Q1 | Real router responses: field names, login mode, timings | Run `scripts/capture-fixtures.mjs` on the boat network (see `scripts/README.md`) | Pinning parsers, fixtures |
+| Q1 | ~~Real router responses~~ Captured 2026-10-07 on a B311-221 (11.0.2.2): login mode `password_type` 4, field names pinned, round of data requests about 1 s. Still open: other firmware versions, and the `send-status` answer | Re-run `scripts/capture-fixtures.mjs` on other firmware if reports come in | `test/fixtures/real/` |
 | Q3 | SMS encoding for non-ASCII text, behaviour with concurrent sessions | Test with the real router | SPEC §13.3 |
-| Q4 | Does the router list the whole SMS inbox in one page? The SMS cache is replaced from each poll, so a partial page would drop messages from other pages | Verify with a real inbox of more than 5 messages | `src/sms-store.ts` cache |
+| Q4 | The router lists the inbox in pages and the real inbox has 87 messages (`LocalInbox`; the router allows 500), but the plugin reads at most 20 per poll and 50 when it checks a message before delete/mark-read (`MAX_PAGE_SIZE` 50). The SMS cache is replaced from each poll, so older messages are invisible and cannot be deleted or marked read | Decide how to page or cache, see Q11 | `src/sms-store.ts`, `src/router-client.ts`, `src/runtime.ts` |
 | Q5 | Are the tile stale times (D16) right for the real polling rates? Router link, plan and SMS paths must be re-emitted at least every 5 minutes | Publish these paths on every poll, not only on change | Tile accuracy |
 | Q6 | Are the send limits (D20) right for you, and should sending also work when server security is disabled (D19)? | Keep as is; turn on Signal K security if the boat network is shared | `src/routes.ts` |
 | Q7 | The webapp's phone layout clips the last SMS in the list box, and has no tabs | Fine for now; refine after seeing real use | `public/lib/styles.js` |
-| Q9 | Is the router's date really server-local time with no timezone, and does `CurrentConnectTime` (traffic statistics) give connection uptime? | Check in the first real capture | `src/parsers.ts`, `networking.modem.uptime` |
+| Q9 | Half answered. `CurrentConnectTime` is the connection time (31 h against 43 h of router uptime), so it is not the boot uptime. Still open: whether the SMS `Date` is really server-local time | Receive a message at a known time and compare | `src/parsers.ts` |
+| Q11 | SMS paging: page through the whole inbox every poll, page lazily, or cache only the newest N and say so? Also what the webapp should show for older messages | Talk it through | `src/router-client.ts`, `src/sms-store.ts`, `src/runtime.ts`, `public/` |
 
 Resolved: Q2 (does a Signal K server accept `zones` / `displayScale` in `meta` and raise the zone notifications?) is answered yes by a real server, see `docs/DEVELOPMENT.md`.
 

@@ -135,20 +135,23 @@ Source: the community client
 [Salamek/huawei-lte-api](https://github.com/Salamek/huawei-lte-api),
 which lists the B311-221 as tested. Paths below are under `<router>/api/`.
 Field names inside the responses are **not** taken from that library
-(it passes raw dicts through) and must be pinned by recording fixtures.
+(it passes raw dicts through). They were pinned by a capture from a real
+B311-221 (software 11.0.2.2, WebUI 11.0.2.1) on 2026-10-07; the redacted
+responses are in `test/fixtures/real/`.
 
 | Concern | Calls |
 |---|---|
 | Session and token | `GET /` and read `<meta name="csrf_token" content="…">` from the HTML head; otherwise `GET webserver/token`, then `GET webserver/SesTokInfo` (`TokInfo`). A session cookie is set by the router |
 | Request headers | `__RequestVerificationToken` on every request. Responses may rotate it via `__RequestVerificationTokenone` / `…two` headers, or `__RequestVerificationToken`. The client keeps a small token queue |
 | Request/response format | XML, wrapped in `<request>…</request>`; errors arrive as `<error><code>…` (100002 unsupported, 100003 login required, 100004 busy, 125002 session/CSRF error, 125003 wrong session token; login errors 108001-108007, where 108007 is the password-attempt lockout) |
-| Login | `GET user/state-login` (state, `password_type`, `rsapadingtype`), then `POST user/login` with `Username`, `Password`, `password_type`. `password_type` 4: `base64(sha256(user + base64(sha256(password) hex) + token) hex)`; type 0 is base64 of the password; type 3 also exists (base64, after a password change) and its handling is unverified. Login then refreshes the CSRF token |
-| Signal | `GET device/signal` (rssi, rsrp, rsrq, sinr, cell, band, pci; values usually carry unit suffixes such as `dBm`, `dB`, and may be prefixed `>`/`<`, so parsing must be tolerant) |
-| Status | `GET monitoring/status` (connection status, signal icon, network type, roaming, WAN IP, …) |
+| Login | `GET user/state-login` (state, `password_type`, `rsapadingtype`), then `POST user/login` with `Username`, `Password`, `password_type`. `password_type` 4 (what the real router reports, with `rsapadingtype` 1): `base64(sha256(user + base64(sha256(password) hex) + token) hex)`; type 0 is base64 of the password; type 3 also exists (base64, after a password change) and its handling is unverified. Login then refreshes the CSRF token |
+| Signal | `GET device/signal` (`rssi`, `rsrp`, `rsrq`, `sinr`, `cell_id`, `band`, `pci`; no network type in this answer; values usually carry unit suffixes such as `dBm`, `dB`, and may be prefixed `>`/`<`, so parsing must be tolerant) |
+| Status | `GET monitoring/status` (`ConnectionStatus` 901 = connected, `SignalIcon`, `CurrentNetworkType` 19 = LTE, `RoamingStatus`, `ServiceStatus`). It has **no** WAN IP and no uptime |
+| Device | `GET device/information` (`WanIPAddress`, `uptime` in seconds since boot; also serial, IMEI, MACs, so never stored). `getConnection` calls it after `monitoring/status` and keeps the link state if only this call fails. `device/boot_time` carries the same uptime as `[h]:[m]:[s]` |
 | Operator | `GET net/current-plmn` |
 | Cell | `GET net/cell-info` |
-| Traffic | `GET monitoring/traffic-statistics` (current session and total), `GET monitoring/month_statistics` (router's own month) |
-| SMS read | `POST sms/sms-list` with ordered fields `PageIndex, ReadCount, BoxType (1=local inbox), SortType, Ascending, UnreadPreferred`; `GET sms/sms-count` |
+| Traffic | `GET monitoring/traffic-statistics` (`CurrentConnectTime` is seconds of the current connection, shorter than the router's uptime; the `Total…` counters are cumulative), `GET monitoring/month_statistics` (router's own month) |
+| SMS read | `POST sms/sms-list` (answers `Count`, then `<Messages><Message>` with `Smstat` 0 = unread, `Index`, `Phone` (a sender name such as `DIGI` is allowed), `Content`, `Date` as `YYYY-MM-DD HH:MM:SS` without a zone, `SmsType`) with ordered fields `PageIndex, ReadCount, BoxType (1=local inbox), SortType, Ascending, UnreadPreferred`; `GET sms/sms-count` (`LocalInbox`, `LocalUnread`, `LocalMax` 500) |
 | SMS send | `POST sms/send-sms` with `Index=-1, Phones/Phone, Sca, Content, Length, Reserved (text mode), Date`; poll `GET sms/send-status` |
 | SMS manage | `POST sms/set-read`, `POST sms/delete-sms` (`Index`) |
 | Logout | `POST user/logout` |

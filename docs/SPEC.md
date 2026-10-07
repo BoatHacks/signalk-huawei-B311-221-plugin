@@ -351,11 +351,10 @@ natural fall-back order is (1) webapp polish, (2) SMS delete/mark-read,
 ## 13. Open Questions
 
 1. **Exact router endpoints and login hashing** on the B311-221's
-   firmware. Needs verification against a real device; none available
-   in the design session and no recorded responses yet (the user will
-   supply fixtures later). Until then every response field name is
-   unverified and the client is built against the library's protocol
-   only.
+   firmware. Verified on 2026-10-07 against a real router (software
+   11.0.2.2, `password_type` 4); the redacted answers are in
+   `test/fixtures/real/` and ARCHITECTURE §5.1 lists the field names.
+   Other firmware versions are untested.
 2. **Router API**: SMS encoding for non-ASCII text, concurrent-session
    behaviour and counter semantics still need confirming on a real
    device. See ARCHITECTURE §5.1.

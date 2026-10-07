@@ -157,9 +157,9 @@ No live tests, since there is no device in CI.
 - [x] Add `capture-out/` to `.gitignore`; add `scripts/README.md` with
       the run instructions and what to send back
 - [x] Dry-run against the mock router, then review the output by eye
-- [ ] Run it against the real router (session with hardware access);
-      review the redacted output before sharing
-- [ ] Copy reviewed files to `test/fixtures/`; update SPEC §13.1 and
+- [x] Run it against the real router (session with hardware access);
+      review the redacted output before sharing (2026-10-07)
+- [x] Copy reviewed files to `test/fixtures/real/`; update SPEC §13.1 and
       ARCHITECTURE §5.1 with the verified field names and login mode
 
 ## Files to Create/Modify
@@ -176,8 +176,8 @@ No live tests, since there is no device in CI.
 
 Built and tested against a mock router. Safety properties were checked by
 mutation (login retried, logout skipped, allowlist opened, raw output
-written, IMEI left unredacted): the tests fail for each. **Not yet run
-against a real router.** Redaction rules and the field names they assume
+written, IMEI left unredacted): the tests fail for each. Run against a
+real B311-221 on 2026-10-07: clean, no leak findings. Redaction rules and the field names they assume
 (`Phone`, `Content`, `Imei`, `WanIPAddress`, ...) come from the
 library's code and general knowledge of these routers, so the first real
 capture may show fields the rules miss; the leak scan is the safety net.

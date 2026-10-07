@@ -8,5 +8,5 @@ One short plan per feature or issue, written before the code. Start from
 
 | Plan | Status |
 |---|---|
-| [capture-fixtures.md](./capture-fixtures.md) | Built, awaiting a run on real hardware |
+| [capture-fixtures.md](./capture-fixtures.md) | Done: run on a real B311-221 on 2026-10-07 |
 | [plugin-wiring.md](./plugin-wiring.md) | Built, awaiting a run on real hardware and a real server |
