@@ -67,5 +67,5 @@ Resolved: Q8 (where do time and token numbers go?). The tool is BoatHacks/laserb
 
 | ID | Question | Recommendation | Blocks |
 |---|---|---|---|
-| Q10 | The laserbrain log archives raw subagent transcripts under `subagent-logs/`. Ours (7 files, about 4 MB) were NOT archived because each one embeds the account email address from the harness context. Archive them anyway, redacted, or skip? | Archive with the email redacted (they are otherwise unedited) if you want parity with the other projects | `laserbrain/subagent-logs/` |
+| Q10 | Archive the seven subagent transcripts (about 4 MB, complete and unedited, as the laserbrain README describes) under `laserbrain/subagent-logs/signalk-huawei-B311-221-plugin/`? The privacy concern about the account email is settled (private repo). What remains: each transcript carries sandbox environment settings and I could not check them for secrets, because that check was blocked by the permission system. | Your call: say "archive them as they are" and I will, or I can archive after you have looked at them | `laserbrain/subagent-logs/` |
 
