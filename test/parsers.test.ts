@@ -282,3 +282,26 @@ test("parseSmsCounts needs both numbers", () => {
   );
   assert.equal(parseSmsCounts(undefined), undefined);
 });
+
+test("parseSmsList drops status reports and keeps unknown types", () => {
+  const item = (index: number, type: string) => ({
+    Index: String(index),
+    Smstat: "0",
+    Phone: "DIGI",
+    Content: "x",
+    Date: "2026-10-05 17:45:11",
+    SmsType: type,
+  });
+  const list = parseSmsList(
+    {
+      Messages: {
+        Message: [item(1, "1"), item(2, "7"), item(3, "2"), item(4, "99")],
+      },
+    },
+    { nowMs: 0 },
+  );
+  assert.deepEqual(
+    list.map((m) => m.index),
+    [1, 3, 4],
+  );
+});

@@ -69,6 +69,7 @@ export const FIELDS = {
     phone: ["phone"],
     content: ["content"],
     date: ["date"],
+    type: ["smstype"], // 1 = text, 7 = delivery report
   },
   // sms/sms-count
   smsCounts: {
@@ -84,6 +85,9 @@ export const FIELDS = {
     current: ["curindex"],
   },
 } as const;
+
+/** sms-list SmsType of a delivery report: the router files these in the inbox, with no text. */
+const SMS_TYPE_STATUS_REPORT = 7;
 
 /** monitoring/status ConnectionStatus value meaning "connected". */
 const CONNECTED = 901;
@@ -315,6 +319,8 @@ export function parseSmsList(
   for (const item of items) {
     const index = parseInteger(pick(item, FIELDS.sms.index));
     if (index === undefined || index < 0) continue;
+    if (parseInteger(pick(item, FIELDS.sms.type)) === SMS_TYPE_STATUS_REPORT)
+      continue;
     const peer = pickText(item, FIELDS.sms.phone) ?? "";
     const rawDate = pickText(item, FIELDS.sms.date) ?? "";
     const rawContent = isObj(item) ? pick(item, FIELDS.sms.content) : undefined;

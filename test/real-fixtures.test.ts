@@ -116,3 +116,17 @@ test("real: sms/send-status is pending, then done", () => {
     ok: true,
   });
 });
+
+test("real: delivery reports (SmsType 7) are not messages", () => {
+  const list = parseSmsList(real("sms-sms-list-with-reports"), {
+    nowMs: Date.parse("2026-10-08T13:00:00Z"),
+    direction: "in",
+  });
+  assert.deepEqual(
+    list.map((m) => [m.index, m.text]),
+    [
+      [40093, "test mit unicode € um 14:52"],
+      [40092, "test um 14:51 lokalzeit"],
+    ],
+  );
+});

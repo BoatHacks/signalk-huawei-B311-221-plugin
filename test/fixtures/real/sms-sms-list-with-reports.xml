@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+<Count>4</Count>
+<Messages>
+
+		<Message>
+			<Smstat>0</Smstat>
+			<Index>40093</Index>
+			<Phone>+491700000000</Phone>
+			<Content>test mit unicode € um 14:52</Content>
+			<Date>2026-10-08 14:52:15</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>1</SmsType>
+		</Message>
+		<Message>
+			<Smstat>0</Smstat>
+			<Index>40092</Index>
+			<Phone>+491700000000</Phone>
+			<Content>test um 14:51 lokalzeit</Content>
+			<Date>2026-10-08 14:51:51</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>1</SmsType>
+		</Message>
+		<Message>
+			<Smstat>0</Smstat>
+			<Index>40091</Index>
+			<Phone>+491700000000</Phone>
+			<Content></Content>
+			<Date>2026-10-08 14:51:02</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>7</SmsType>
+		</Message>
+		<Message>
+			<Smstat>0</Smstat>
+			<Index>40089</Index>
+			<Phone>+491700000000</Phone>
+			<Content></Content>
+			<Date>2026-10-08 14:47:33</Date>
+			<Sca></Sca>
+			<SaveType>0</SaveType>
+			<Priority>0</Priority>
+			<SmsType>7</SmsType>
+		</Message>
+	</Messages>
+</response>

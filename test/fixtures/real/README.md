@@ -12,3 +12,8 @@ as the router sent it. The SMS texts are masked (letters to `x`, digits to
 sending one ASCII message on 2026-10-08. The router answered `send-sms` with
 `OK`, then `send-status` twice with the number still in `Phone`, then with
 it in `SucPhone`. The recipient number was replaced.
+
+`sms-sms-list-with-reports.xml` is the shape of four inbox entries seen on
+2026-10-08: two replies sent from a phone (`SmsType` 1) and two entries with
+empty text and `SmsType` 7 that the router stored about five seconds after
+each message the plugin sent. Number and texts were replaced.

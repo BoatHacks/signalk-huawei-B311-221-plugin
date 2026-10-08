@@ -151,7 +151,7 @@ responses are in `test/fixtures/real/`.
 | Operator | `GET net/current-plmn` |
 | Cell | `GET net/cell-info` |
 | Traffic | `GET monitoring/traffic-statistics` (`CurrentConnectTime` is seconds of the current connection, shorter than the router's uptime; the `Total…` counters are cumulative), `GET monitoring/month_statistics` (router's own month) |
-| SMS read | `POST sms/sms-list` (answers `Count`, then `<Messages><Message>` with `Smstat` 0 = unread, `Index`, `Phone` (a sender name such as `DIGI` is allowed), `Content`, `Date` as `YYYY-MM-DD HH:MM:SS` without a zone, `SmsType`) with ordered fields `PageIndex, ReadCount, BoxType (1=local inbox), SortType, Ascending, UnreadPreferred`; `GET sms/sms-count` (`LocalInbox`, `LocalUnread`, `LocalMax` 500; read every SMS poll, see D42) |
+| SMS read | `POST sms/sms-list` (answers `Count`, then `<Messages><Message>` with `Smstat` 0 = unread, `Index`, `Phone` (a sender name such as `DIGI` is allowed), `Content`, `Date` as `YYYY-MM-DD HH:MM:SS` in the router's local time, `SmsType` 1 = text, 7 = delivery report, which is dropped, D43) with ordered fields `PageIndex, ReadCount, BoxType (1=local inbox), SortType, Ascending, UnreadPreferred`; `GET sms/sms-count` (`LocalInbox`, `LocalUnread`, `LocalMax` 500; read every SMS poll, see D42) |
 | SMS send | `POST sms/send-sms` with `Index=-1, Phones/Phone, Sca, Content, Length, Reserved (text mode), Date`; poll `GET sms/send-status` |
 | SMS manage | `POST sms/set-read`, `POST sms/delete-sms` (`Index`) |
 | Logout | `POST user/logout` |

@@ -13,3 +13,5 @@
 - The unread SMS count now follows the router's own total (the inbox can be
   larger than the page the plugin reads), and a burst of new messages larger
   than one page is read in full so none is missed.
+- Delivery reports, which the router files in the inbox with no text, are no
+  longer shown or announced as new messages.
