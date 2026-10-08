@@ -60,9 +60,12 @@ code and docs get updated.
 |---|---|---|---|
 | Q1 | ~~Real router responses~~ Captured 2026-10-07 on a B311-221 (11.0.2.2): login mode `password_type` 4, field names pinned, round of data requests about 1 s. Still open: other firmware versions | Re-run `scripts/capture-fixtures.mjs` on other firmware if reports come in | `test/fixtures/real/` |
 | Q3 | Mostly answered on 2026-10-08. ASCII (7-bit) and non-ASCII (UCS2: `ü`, `ß`, `€`) messages sent from the plugin both arrived intact; `send-status` answers pending, then the number in `SucPhone`, and the parser reads that. Still open: behaviour with concurrent sessions | Low priority | SPEC §13.3 |
-| Q5 | Are the tile stale times (D16) right for the real polling rates? Router link, plan and SMS paths must be re-emitted at least every 5 minutes | Publish these paths on every poll, not only on change | Tile accuracy |
-| Q6 | Are the send limits (D20) right for you, and should sending also work when server security is disabled (D19)? | Keep as is; turn on Signal K security if the boat network is shared | `src/routes.ts` |
-| Q7 | The webapp's phone layout clips the last SMS in the list box, and has no tabs | Fine for now; refine after seeing real use | `public/lib/styles.js` |
+
+Resolved: Q5 (tile stale times) by D31: router link, plan and SMS paths are re-published on every signal tick (at least every 5 s), far inside the 300 s stale time.
+
+Resolved: Q6 (send limits, sending with security off): kept as in D19 and D20. Turn on Signal K security if the boat network is shared.
+
+Resolved: Q7 (phone layout), 2026-10-08: below 900 px the page shows a Status / SMS tab bar (unread count on the SMS tab), and the SMS list is capped at 60% of the viewport height with no trailing margin so the last message is not cut off. Checked by lint, typecheck and tests only, not yet by eye on a phone.
 
 Resolved: Q9. `CurrentConnectTime` is the connection time (31 h against 43 h of router uptime), not the boot uptime. The SMS `Date` is the router's local time without a zone: two messages sent at 14:51 and 14:52 by phone were stamped `14:51:51` and `14:52:15`, which the plugin reads as the server's local time (2026-10-08). Incoming `€` decodes correctly and the sender arrives as `+49…`.
 

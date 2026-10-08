@@ -19,7 +19,15 @@ const css = `
             background: rgba(var(--color-orange-rgb), 0.16); font-weight: 600; }
   .notice.err { border-color: var(--color-red); color: var(--color-red); background: rgba(var(--color-red-rgb), 0.16); }
   main { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  nav { display: flex; gap: 8px; margin-bottom: 12px; }
+  nav button { flex: 1; }
+  nav button[aria-selected="true"] { border-color: var(--color-teal); background: rgba(var(--color-teal-rgb), 0.22); font-weight: 600; }
+  /* Phone layout: one tab at a time. Wide screens show everything. */
+  main[data-tab="status"] lte-sms { display: none; }
+  main[data-tab="sms"] lte-signal, main[data-tab="sms"] lte-connection, main[data-tab="sms"] lte-plan { display: none; }
   @media (min-width: 900px) {
+    nav { display: none; }
+    main[data-tab] lte-signal, main[data-tab] lte-connection, main[data-tab] lte-plan, main[data-tab] lte-sms { display: block; }
     main { grid-template-columns: 1fr 1fr; }
     lte-sms { grid-column: 1 / -1; }
   }
@@ -40,6 +48,7 @@ class LteApp extends HTMLElement {
   #smsError = null;
   #timers = [];
   #refs = {};
+  #tab = "status";
 
   connectedCallback() {
     const style = el("style");
@@ -50,13 +59,31 @@ class LteApp extends HTMLElement {
     header.append(h1, age);
     const notices = el("div");
     const main = el("main");
+    main.dataset.tab = this.#tab;
+    const nav = el("nav");
+    nav.setAttribute("role", "tablist");
+    const tabs = {};
+    for (const [id, label] of [
+      ["status", "Status"],
+      ["sms", "SMS"],
+    ]) {
+      const b = el("button", "", label);
+      b.type = "button";
+      b.setAttribute("role", "tab");
+      b.addEventListener("click", () => {
+        this.#tab = id;
+        this.#render();
+      });
+      tabs[id] = b;
+      nav.append(b);
+    }
     const signal = el("lte-signal");
     const connection = el("lte-connection");
     const plan = el("lte-plan");
     const sms = el("lte-sms");
     main.append(signal, connection, plan, sms);
-    this.#root.append(style, header, notices, main);
-    this.#refs = { age, notices, signal, connection, plan, sms };
+    this.#root.append(style, header, notices, nav, main);
+    this.#refs = { age, notices, main, tabs, signal, connection, plan, sms };
 
     this.#timers.push(startModePolling());
     this.#timers.push(setInterval(() => this.#tick(), 1000));
@@ -205,6 +232,14 @@ class LteApp extends HTMLElement {
     r.notices.replaceChildren(
       ...notices.map(([k, m]) => el("p", `notice ${k}`, m)),
     );
+
+    r.main.dataset.tab = this.#tab;
+    for (const [id, b] of Object.entries(r.tabs))
+      b.setAttribute("aria-selected", String(id === this.#tab));
+    const unread = this.#messages.filter(
+      (m) => m.direction !== "out" && !m.read,
+    ).length;
+    r.tabs.sms.textContent = unread ? `SMS (${unread})` : "SMS";
 
     r.signal.data = { signal: st?.signal, stale };
     r.connection.data = { status: st ?? undefined, stale };

@@ -5,7 +5,8 @@ import { smsSegments } from "./format.js";
 import { baseCss } from "./styles.js";
 
 const css = `
-  .list { list-style: none; margin: 0 0 16px; padding: 0; max-height: 420px; overflow-y: auto; }
+  .list { list-style: none; margin: 0 0 16px; padding: 0; max-height: min(420px, 60dvh); overflow-y: auto; }
+  .list > :last-child { margin-bottom: 0; }
   .msg { border: 2px solid rgba(var(--color-grey-rgb), 0.65); background: var(--bg-panel-muted); padding: 10px; margin-bottom: 8px; }
   .msg.unread { border-color: rgba(var(--color-teal-rgb), 0.9); }
   .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted); }
