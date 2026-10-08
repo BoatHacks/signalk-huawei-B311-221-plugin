@@ -1,6 +1,6 @@
 {
   "name": "@boathacks/signalk-huawei-b311-221",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Signal K plugin for the Huawei B311-221 LTE router: signal, connection, data plan and SMS",
   "license": "MIT",
   "repository": {

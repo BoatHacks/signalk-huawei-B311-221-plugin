@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.5 - 2026-10-08
+
 - Web page: restyled to match Status Tiles. Flat panels with thick state
   borders and corner brackets, uppercase state-coloured labels, white
   monospace numbers, and a top band with the title, a router link indicator
