@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.1.1 - 2026-10-08
+
+- No code changes from 0.1.0. Published through the GitHub release workflow
+  (npm trusted publishing) to test that path.
+
 ## 0.1.0 - 2026-10-08
 
 - Published as `@boathacks/signalk-huawei-b311-221`: npm refused the unscoped
