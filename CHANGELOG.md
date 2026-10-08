@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.4 - 2026-10-08
+
 - Data plan: "Set used data" in the web page lets an admin enter the data
   already used in the current plan period, as the carrier shows it, for
   installs that start mid-cycle. It ends with the period.
