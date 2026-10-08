@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Web page: restyled to match Status Tiles. Flat panels with thick state
+  borders and corner brackets, uppercase state-coloured labels, white
+  monospace numbers, and a top band with the title, a router link indicator
+  and a clock. Sizes scale with the screen but keep a readable minimum on
+  phones.
+
 ## 0.1.4 - 2026-10-08
 
 - Data plan: "Set used data" in the web page lets an admin enter the data

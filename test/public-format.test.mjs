@@ -194,3 +194,12 @@ test("parseGigabytes reads what a person types", async () => {
   for (const bad of ["", "abc", "-3", "1.2.3", "12 MB"])
     assert.equal(parseGigabytes(bad), undefined, bad);
 });
+
+test("linkIndicator names the router link and flags everything but ok", async () => {
+  const { linkIndicator } = await import("../public/lib/format.js");
+  assert.deepEqual(linkIndicator("ok"), { text: "router online", lost: false });
+  assert.equal(linkIndicator("unreachable").lost, true);
+  assert.equal(linkIndicator("auth-failed").text, "login failed");
+  assert.equal(linkIndicator(undefined).text, "connecting");
+  assert.equal(linkIndicator("ok", { serverLost: true }).text, "server lost");
+});

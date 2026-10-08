@@ -1,7 +1,13 @@
 // Huawei B311 webapp: polls the plugin REST API and renders four panels.
 import { ApiError, api } from "./lib/api.js";
 import { el } from "./lib/dom.js";
-import { formatAge, isStale, sendOutcome, writeDenial } from "./lib/format.js";
+import {
+  formatAge,
+  isStale,
+  linkIndicator,
+  sendOutcome,
+  writeDenial,
+} from "./lib/format.js";
 import { startModePolling } from "./lib/mode.js";
 import "./lib/panels.js";
 import "./lib/sms-panel.js";
@@ -11,14 +17,31 @@ const STATUS_POLL_MS = 10_000;
 const SMS_POLL_MS = 30_000;
 
 const css = `
-  :host { display: block; min-height: 100vh; padding: 12px 16px 32px; max-width: 1200px; margin: 0 auto; }
-  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-  h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.08em; text-transform: uppercase; }
-  .age { font-size: 0.85rem; color: var(--text-muted); }
+  :host { display: block; min-height: 100vh; }
+  /* Chrome band, as in Status Tiles: subordinate, muted, uppercase. */
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap;
+    min-height: clamp(36px, 4.6vh, 56px); padding: 6px clamp(14px, 2vw, 32px);
+    border-bottom: 1px solid rgba(var(--color-grey-rgb), 0.45);
+    background: var(--bg-panel-muted);
+    font-size: clamp(0.75rem, 1.9vh, 1.05rem); letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .left, .right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
+  h1 { margin: 0; font-size: inherit; font-weight: 700; letter-spacing: 0.22em; color: var(--text-main); }
+  .age { padding: 2px 10px; border: 1px solid rgba(var(--color-grey-rgb), 0.55); color: var(--text-muted);
+         font-size: 0.85em; letter-spacing: 0.18em; }
+  .link { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 0.85em; letter-spacing: 0.18em; }
+  .link .dot { width: 1.1ch; height: 1.1ch; background: var(--color-green); }
+  .link.lost { color: var(--color-red); }
+  .link.lost .dot { background: var(--color-red); animation: linkpulse 1.1s ease-in-out infinite; }
+  @keyframes linkpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .link.lost .dot { animation: none; } }
+  .clock { color: var(--text-main); font-weight: 600; letter-spacing: 0.12em; }
+  .page { padding: clamp(12px, 2vh, 28px) clamp(14px, 2vw, 32px) 32px; max-width: 1400px; margin: 0 auto; }
   .notice { margin: 0 0 12px; padding: 10px 12px; border: 2px solid var(--color-orange); color: var(--color-orange);
             background: rgba(var(--color-orange-rgb), 0.16); font-weight: 600; }
   .notice.err { border-color: var(--color-red); color: var(--color-red); background: rgba(var(--color-red-rgb), 0.16); }
-  main { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  main { display: grid; gap: clamp(10px, 1.4vh, 20px) clamp(10px, 1.4vw, 20px); grid-template-columns: 1fr; }
   nav { display: flex; gap: 8px; margin-bottom: 12px; }
   nav button { flex: 1; }
   nav button[aria-selected="true"] { border-color: var(--color-teal); background: rgba(var(--color-teal-rgb), 0.22); font-weight: 600; }
@@ -56,7 +79,17 @@ class LteApp extends HTMLElement {
     const header = el("header");
     const h1 = el("h1", "", "Huawei B311 LTE");
     const age = el("span", "age mono");
-    header.append(h1, age);
+    const left = el("div", "left");
+    left.append(h1, age);
+    const linkDot = el("span", "dot");
+    const linkText = el("span");
+    const link = el("span", "link");
+    link.append(linkDot, linkText);
+    const clock = el("span", "clock mono");
+    const right = el("div", "right");
+    right.append(link, clock);
+    header.append(left, right);
+    const page = el("div", "page");
     const notices = el("div");
     const main = el("main");
     main.dataset.tab = this.#tab;
@@ -82,8 +115,21 @@ class LteApp extends HTMLElement {
     const plan = el("lte-plan");
     const sms = el("lte-sms");
     main.append(signal, connection, plan, sms);
-    this.#root.append(style, header, notices, nav, main);
-    this.#refs = { age, notices, main, tabs, signal, connection, plan, sms };
+    page.append(notices, nav, main);
+    this.#root.append(style, header, page);
+    this.#refs = {
+      age,
+      link,
+      linkText,
+      clock,
+      notices,
+      main,
+      tabs,
+      signal,
+      connection,
+      plan,
+      sms,
+    };
 
     this.#timers.push(startModePolling());
     this.#timers.push(setInterval(() => this.#tick(), 1000));
@@ -112,6 +158,9 @@ class LteApp extends HTMLElement {
   };
 
   #tick() {
+    this.#refs.clock.textContent = new Date().toLocaleTimeString([], {
+      hour12: false,
+    });
     const st = this.#status;
     if (st?.updatedAt)
       this.#refs.age.textContent = `Updated ${formatAge(Date.now() - Date.parse(st.updatedAt))}`;
@@ -224,6 +273,12 @@ class LteApp extends HTMLElement {
       now - this.#statusAt > 60_000;
     const r = this.#refs;
 
+    const ind = linkIndicator(st?.link, {
+      serverLost: this.#statusError !== null || this.#authError,
+    });
+    r.link.classList.toggle("lost", ind.lost);
+    r.linkText.textContent = ind.text;
+    this.#tick();
     r.age.textContent = st
       ? `Updated ${formatAge(st.updatedAt ? now - Date.parse(st.updatedAt) : undefined)}`
       : "Loading...";

@@ -183,3 +183,22 @@ export function parseGigabytes(text) {
   const m = /^\s*(\d+(?:[.,]\d+)?)\s*(?:gb)?\s*$/i.exec(String(text));
   return m ? Number(m[1].replace(",", ".")) : undefined;
 }
+
+/**
+ * The word and colour for the link indicator in the page's top band. Anything
+ * but a working router link reads as lost, like Status Tiles' stream indicator.
+ * `serverLost` means this page cannot reach the Signal K server at all.
+ */
+export function linkIndicator(link, { serverLost = false } = {}) {
+  if (serverLost) return { text: "server lost", lost: true };
+  switch (link) {
+    case "ok":
+      return { text: "router online", lost: false };
+    case "unreachable":
+      return { text: "router unreachable", lost: true };
+    case "auth-failed":
+      return { text: "login failed", lost: true };
+    default:
+      return { text: "connecting", lost: true };
+  }
+}

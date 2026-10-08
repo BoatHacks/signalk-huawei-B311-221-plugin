@@ -43,12 +43,13 @@ export class LteSignal extends Panel {
   static css = `
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .m { --c: var(--color-grey); --c-rgb: var(--color-grey-rgb); border: 2px solid rgba(var(--c-rgb), 0.65);
-         background: var(--bg-panel-muted); padding: 10px; }
+         background: var(--bg-panel-muted); padding: 10px; text-align: center; }
+    .m.green, .m.amber, .m.red { background: rgba(var(--c-rgb), 0.16); }
     .m.green { --c: var(--color-green); --c-rgb: var(--color-green-rgb); }
     .m.amber { --c: var(--color-orange); --c-rgb: var(--color-orange-rgb); }
     .m.red { --c: var(--color-red); --c-rgb: var(--color-red-rgb); }
-    .name { font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-muted); }
-    .val { font-size: 1.9rem; line-height: 1.2; color: var(--c); margin: 2px 0 6px; }
+    .name { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; color: var(--c); }
+    .val { font-size: clamp(1.7rem, 4.2vh, 3.2rem); font-weight: 800; line-height: 1.1; color: var(--text-main); margin: 4px 0 8px; }
     .val small { font-size: 0.85rem; color: var(--text-muted); margin-left: 4px; }
     .bars { display: flex; gap: 3px; height: 12px; }
     .bars i { flex: 1; background: rgba(var(--color-grey-rgb), 0.5); }
@@ -155,10 +156,10 @@ export class LtePlan extends Panel {
   static css = `
     .gauge { height: 22px; background: rgba(var(--color-grey-rgb), 0.5); margin: 4px 0 12px; position: relative; }
     .fill { height: 100%; background: var(--c); }
-    .big { font-size: 1.9rem; color: var(--c); }
+    .big { font-size: clamp(2.2rem, 6vh, 4.5rem); font-weight: 800; line-height: 1; color: var(--text-main); text-align: center; }
     dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; }
     dt { color: var(--text-muted); } dd { margin: 0; text-align: right; }
-    .actions { margin-top: 14px; }
+    .actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
   `;
   /** @param {{plan?: object, stale: boolean, canWrite: boolean}} d */
   set data({ plan, stale, canWrite, onReset, onSetUsed, now = Date.now() }) {
