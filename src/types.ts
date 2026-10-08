@@ -67,6 +67,12 @@ export interface PlanSnapshot {
   periodEnd: string;
 }
 
+/** The router's own inbox totals (sms/sms-count). */
+export interface SmsCounts {
+  inbox: number;
+  unread: number;
+}
+
 export interface SmsMessage {
   /** Stable id: derived from router index, date and sender (see SmsStore). */
   id: string;

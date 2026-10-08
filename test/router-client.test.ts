@@ -931,3 +931,30 @@ test("impossible router dates are rejected instead of rolling over", () => {
   assert.ok(routerDateToIso("2024-02-29 12:30:45"));
   assert.equal(routerDateToIso("2023-02-29 12:30:45"), undefined);
 });
+
+test("getSmsCounts reads the router's own inbox and unread totals", async () => {
+  const sms = [0, 1, 2].map((i) => ({
+    index: 40000 + i,
+    phone: "DIGI",
+    content: "hi",
+    date: "2026-10-05 17:45:11",
+    stat: i === 0 ? 1 : 0,
+  }));
+  await withRouter({ sms }, async (_router, make) => {
+    assert.deepEqual(await make().getSmsCounts(), { inbox: 3, unread: 2 });
+  });
+});
+
+test("listSms asks for the page it is given", async () => {
+  const sms = Array.from({ length: 45 }, (_, i) => ({
+    index: 40000 + i,
+    phone: "DIGI",
+    content: "hi",
+    date: "2026-10-05 17:45:11",
+  }));
+  await withRouter({ sms }, async (_router, make) => {
+    const client = make();
+    assert.equal((await client.listSms()).length, 20);
+    assert.equal((await client.listSms({ page: 3 })).length, 5);
+  });
+});

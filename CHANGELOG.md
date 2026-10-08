@@ -10,3 +10,6 @@
 - Checked against a real B311-221 (software 11.0.2.2): field names pinned,
   real fixtures added. Router uptime and WAN IP now come from
   `device/information`; `monitoring/status` does not carry them.
+- The unread SMS count now follows the router's own total (the inbox can be
+  larger than the page the plugin reads), and a burst of new messages larger
+  than one page is read in full so none is missed.

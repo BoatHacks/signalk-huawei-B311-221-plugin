@@ -493,3 +493,22 @@ test("a busy router session shows as retrying, not as a login failure", async ()
     await router.close();
   }
 });
+
+test("the unread count follows the router's total, not the page we read", async () => {
+  const sms = Array.from({ length: 30 }, (_, i) => ({
+    index: 40100 - i,
+    phone: "DIGI",
+    content: `message ${i}`,
+    date: `2026-10-05 17:${String(59 - i).padStart(2, "0")}:00`,
+  }));
+  const { router, f, runtime } = await boot({ sms });
+  try {
+    await runtime.start();
+    await initialPollsDone(f);
+    assert.equal(f.values("networking.lte.sms.unread").at(-1), 30);
+    assert.equal((runtime.status().sms as { unread: number }).unread, 30);
+  } finally {
+    await runtime.stop();
+    await router.close();
+  }
+});

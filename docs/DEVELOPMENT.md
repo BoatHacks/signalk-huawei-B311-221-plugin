@@ -67,4 +67,4 @@ Done on 2026-10-06 with the mock router standing in for the B311:
   admin banner and hides the write controls; as admin, sending works.
 
 Not verified: anything involving a real B311 (see
-[OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md), Q1, Q3, Q4, Q9).
+[OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md), Q1, Q3, Q9).

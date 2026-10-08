@@ -3,6 +3,7 @@ import type {
   LinkState,
   OperatorInfo,
   SignalSample,
+  SmsCounts,
   SmsMessage,
   TrafficSample,
 } from "./types.ts";
@@ -13,7 +14,8 @@ export interface RouterPort {
   getOperator(): Promise<OperatorInfo>;
   getConnection(): Promise<ConnectionStatus>;
   getTraffic(): Promise<TrafficSample>;
-  listSms(): Promise<SmsMessage[]>;
+  getSmsCounts(): Promise<SmsCounts>;
+  listSms(opts?: { page?: number }): Promise<SmsMessage[]>;
 }
 
 export interface PollerHandlers {
@@ -23,7 +25,8 @@ export interface PollerHandlers {
     connection: ConnectionStatus;
   }): void;
   onTraffic(sample: TrafficSample): void;
-  onSms(messages: SmsMessage[]): void;
+  /** `counts` are the router's own totals; missing when that call failed. */
+  onSms(messages: SmsMessage[], counts?: SmsCounts): void;
   /** Called only when the link state changes. */
   onLink(state: LinkState, detail?: string): void;
 }
@@ -58,6 +61,9 @@ type Outcome =
   | { ok: false; kind: "auth" | "unreachable" | "other"; message: string };
 
 const DEFAULT_MAX_BACKOFF_MS = 5 * 60 * 1000;
+/** Most extra SMS pages one poll reads after a burst, and the most messages it asks for. */
+const SMS_BURST_PAGES = 5;
+const SMS_BURST_MAX = 100;
 
 /**
  * Polls the router on three independent schedules, one request at a time.
@@ -83,6 +89,8 @@ export function createPollers(opts: PollersOptions): Pollers {
 
   let running = false;
   let stopped = false;
+  // The router's inbox total at the previous SMS poll.
+  let lastInbox: number | undefined;
   let halted = false; // auth failure: nothing more happens until restart
   let link: LinkState | undefined;
   let backoffMs = 0;
@@ -147,8 +155,31 @@ export function createPollers(opts: PollersOptions): Pollers {
         const sample = await router.getTraffic();
         if (!stopped) guard("traffic", () => handlers.onTraffic(sample));
       } else {
+        let counts: SmsCounts | undefined;
+        try {
+          counts = await router.getSmsCounts();
+        } catch (e) {
+          // The totals are a bonus; the messages matter more. Session
+          // problems still surface through the list call below.
+          if (!(e instanceof Error && e.name === "BadResponse")) throw e;
+        }
         const messages = await router.listSms();
-        if (!stopped) guard("sms", () => handlers.onSms(messages));
+        // A page holds only the newest messages. If the inbox grew by more
+        // than that since the last poll, read further back so none is missed.
+        if (counts && lastInbox !== undefined) {
+          const wanted = Math.min(counts.inbox - lastInbox, SMS_BURST_MAX);
+          for (
+            let page = 2;
+            messages.length < wanted && page <= SMS_BURST_PAGES;
+            page++
+          ) {
+            const more = await router.listSms({ page });
+            if (more.length === 0) break;
+            messages.push(...more);
+          }
+        }
+        lastInbox = counts?.inbox;
+        if (!stopped) guard("sms", () => handlers.onSms(messages, counts));
       }
       return { ok: true };
     } catch (e) {

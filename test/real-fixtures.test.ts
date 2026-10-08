@@ -5,6 +5,7 @@ import {
   parseConnection,
   parseOperator,
   parseSignal,
+  parseSmsCounts,
   parseSmsList,
   parseTraffic,
   routerDateToIso,
@@ -94,4 +95,11 @@ test("real: sms/sms-list", () => {
   assert.equal(list[3]?.peer, "00000");
   // The router's date has no zone; it is read as the server's local time.
   assert.equal(list[0]?.timestamp, routerDateToIso("2026-10-05 17:45:11"));
+});
+
+test("real: sms/sms-count", () => {
+  assert.deepEqual(parseSmsCounts(real("sms-sms-count")), {
+    inbox: 87,
+    unread: 33,
+  });
 });

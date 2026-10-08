@@ -8,6 +8,7 @@ import {
   parseOperator,
   parseSendStatus,
   parseSignal,
+  parseSmsCounts,
   parseSmsList,
   parseTraffic,
   routerDateToIso,
@@ -267,4 +268,17 @@ test("parseResponseXml extracts router error codes and OK bodies", () => {
   assert.equal(parseResponseXml("<response>OK</response>").data, "OK");
   assert.throws(() => parseResponseXml("<html><body>nope"), /XML|response/i);
   assert.throws(() => parseResponseXml(""), /empty|response/i);
+});
+
+test("parseSmsCounts needs both numbers", () => {
+  assert.deepEqual(parseSmsCounts({ LocalInbox: "5", LocalUnread: "2" }), {
+    inbox: 5,
+    unread: 2,
+  });
+  assert.equal(parseSmsCounts({ LocalInbox: "5" }), undefined);
+  assert.equal(
+    parseSmsCounts({ LocalInbox: "x", LocalUnread: "2" }),
+    undefined,
+  );
+  assert.equal(parseSmsCounts(undefined), undefined);
 });

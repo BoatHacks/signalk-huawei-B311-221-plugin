@@ -49,6 +49,7 @@ function harness(
       downloadBytes: 2,
       at: 0,
     } satisfies TrafficSample),
+    getSmsCounts: wrap("smsCounts", { inbox: 0, unread: 0 }),
     listSms: wrap("sms", [] as SmsMessage[]),
   } as unknown as RouterPort;
   const pollers = createPollers({
@@ -75,6 +76,7 @@ test("start polls signal, traffic and SMS once each, one after the other", async
     "operator",
     "connection",
     "traffic",
+    "smsCounts",
     "sms",
   ]);
   assert.deepEqual(h.events, ["onSignal", "onTraffic", "onSms"]);
@@ -272,7 +274,7 @@ test("pollNow runs a poll immediately without disturbing the schedule", async ()
   await h.timers.flush();
   h.calls.length = 0;
   await h.pollers.pollNow("sms");
-  assert.deepEqual(h.calls, ["sms"]);
+  assert.deepEqual(h.calls, ["smsCounts", "sms"]);
   await h.pollers.stop();
 });
 
@@ -291,5 +293,114 @@ test("a busy router session is treated like an unreachable router: back off and 
   busy = false;
   await h.timers.advance(20 * SEC);
   assert.deepEqual(h.links, ["connecting", "unreachable", "ok"]);
+  await h.pollers.stop();
+});
+
+function smsHarness(counts: Array<{ inbox: number; unread: number } | Error>) {
+  const timers = createFakeTimers();
+  const pages: number[] = [];
+  const delivered: Array<{ n: number; counts: unknown }> = [];
+  let tick = 0;
+  const msg = (i: number) =>
+    ({ id: `m${i}`, index: i }) as unknown as SmsMessage;
+  const router = {
+    getSignal: async () => ({ rsrp: -90 }),
+    getOperator: async () => ({}),
+    getConnection: async () => ({ connected: true, serviceAvailable: true }),
+    getTraffic: async () => ({ uploadBytes: 1, downloadBytes: 1, at: 0 }),
+    getSmsCounts: async () => {
+      const c = counts[Math.min(tick++, counts.length - 1)];
+      if (c instanceof Error) throw c;
+      return c;
+    },
+    listSms: async (opts?: { page?: number }) => {
+      const page = opts?.page ?? 1;
+      pages.push(page);
+      return Array.from({ length: 20 }, (_, i) => msg(page * 100 + i));
+    },
+  } as unknown as RouterPort;
+  const pollers = createPollers({
+    router,
+    intervals: INTERVALS,
+    timers,
+    handlers: {
+      onSignal: () => {},
+      onTraffic: () => {},
+      onSms: (messages: SmsMessage[], c?: unknown) =>
+        delivered.push({ n: messages.length, counts: c }),
+      onLink: () => {},
+    },
+    log: () => {},
+  });
+  return { timers, pages, delivered, pollers };
+}
+
+test("the router's SMS totals are handed on with the messages", async () => {
+  const h = smsHarness([{ inbox: 87, unread: 33 }]);
+  h.pollers.start();
+  await h.timers.flush();
+  assert.deepEqual(h.delivered, [{ n: 20, counts: { inbox: 87, unread: 33 } }]);
+  await h.pollers.stop();
+});
+
+test("a burst of new messages is fetched page by page until covered", async () => {
+  const h = smsHarness([
+    { inbox: 10, unread: 0 },
+    { inbox: 55, unread: 45 },
+  ]);
+  h.pollers.start();
+  await h.timers.flush();
+  h.pages.length = 0;
+  await h.timers.advance(60 * SEC);
+  // 45 new messages need pages 1, 2 and 3 at 20 per page.
+  assert.deepEqual(h.pages, [1, 2, 3]);
+  assert.equal(h.delivered[1]?.n, 60);
+  await h.pollers.stop();
+});
+
+test("a few new messages need only the first page", async () => {
+  const h = smsHarness([
+    { inbox: 10, unread: 0 },
+    { inbox: 13, unread: 3 },
+  ]);
+  h.pollers.start();
+  await h.timers.flush();
+  h.pages.length = 0;
+  await h.timers.advance(60 * SEC);
+  assert.deepEqual(h.pages, [1]);
+  await h.pollers.stop();
+});
+
+test("a fall in the inbox total (deleted on the router) fetches nothing extra", async () => {
+  const h = smsHarness([
+    { inbox: 90, unread: 0 },
+    { inbox: 10, unread: 0 },
+  ]);
+  h.pollers.start();
+  await h.timers.flush();
+  h.pages.length = 0;
+  await h.timers.advance(60 * SEC);
+  assert.deepEqual(h.pages, [1]);
+  await h.pollers.stop();
+});
+
+test("an absurd jump is capped at five pages", async () => {
+  const h = smsHarness([
+    { inbox: 0, unread: 0 },
+    { inbox: 500, unread: 500 },
+  ]);
+  h.pollers.start();
+  await h.timers.flush();
+  h.pages.length = 0;
+  await h.timers.advance(60 * SEC);
+  assert.deepEqual(h.pages, [1, 2, 3, 4, 5]);
+  await h.pollers.stop();
+});
+
+test("unusable totals do not stop the messages", async () => {
+  const h = smsHarness([named("BadResponse", "no counts") as Error]);
+  h.pollers.start();
+  await h.timers.flush();
+  assert.deepEqual(h.delivered, [{ n: 20, counts: undefined }]);
   await h.pollers.stop();
 });

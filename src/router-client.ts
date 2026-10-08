@@ -15,12 +15,14 @@ import {
   parseOperator,
   parseSendStatus,
   parseSignal,
+  parseSmsCounts,
   parseSmsList,
   parseTraffic,
 } from "./parsers.ts";
 import type {
   OperatorInfo,
   SignalSample,
+  SmsCounts,
   SmsMessage,
   TrafficSample,
 } from "./types.ts";
@@ -39,6 +41,7 @@ const ALLOWED_GET = new Set([
   "net/current-plmn",
   "monitoring/status",
   "monitoring/traffic-statistics",
+  "sms/sms-count",
   "sms/send-status",
 ]);
 const ALLOWED_POST = new Set([
@@ -263,6 +266,15 @@ export class RouterClient {
       if (!sample)
         throw new BadResponse("Traffic answer has no total counters");
       return sample;
+    });
+  }
+
+  /** The router's inbox and unread totals; the whole inbox, not one page. */
+  getSmsCounts(): Promise<SmsCounts> {
+    return this.enqueue(async () => {
+      const counts = parseSmsCounts(await this.call("GET", "sms/sms-count"));
+      if (!counts) throw new BadResponse("SMS count answer has no totals");
+      return counts;
     });
   }
 

@@ -3,6 +3,7 @@ import type {
   ConnectionStatus,
   OperatorInfo,
   SignalSample,
+  SmsCounts,
   SmsMessage,
   TrafficSample,
 } from "./types.ts";
@@ -68,6 +69,11 @@ export const FIELDS = {
     phone: ["phone"],
     content: ["content"],
     date: ["date"],
+  },
+  // sms/sms-count
+  smsCounts: {
+    inbox: ["localinbox"],
+    unread: ["localunread"],
   },
   // sms/send-status
   sendStatus: {
@@ -168,6 +174,15 @@ export function parseSignal(obj: unknown): SignalSample {
     pci: pickText(obj, f.pci),
     networkType: pickText(obj, f.networkType),
   });
+}
+
+/** Undefined unless both totals are present and numeric. */
+export function parseSmsCounts(obj: unknown): SmsCounts | undefined {
+  const f = FIELDS.smsCounts;
+  const inbox = parseInteger(pick(obj, f.inbox));
+  const unread = parseInteger(pick(obj, f.unread));
+  if (inbox === undefined || unread === undefined) return undefined;
+  return { inbox, unread };
 }
 
 /** Empty when the router reports no registration (no names, no PLMN). */

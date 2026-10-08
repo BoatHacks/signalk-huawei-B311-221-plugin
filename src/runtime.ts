@@ -14,6 +14,7 @@ import type {
   OperatorInfo,
   PluginConfig,
   SignalSample,
+  SmsCounts,
   SmsMessage,
   StatusSnapshot,
   UsageAccount,
@@ -93,14 +94,26 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
   // Messages we raised a notification for, so it can be cleared again.
   const notified = new Set<string>();
 
+  // The router's own unread total. Our cache holds only the newest page, so
+  // counting it would understate an inbox with older unread messages.
+  let routerUnread: number | undefined;
+
   const smsSummary = () => {
     const latest = smsStore.list().find((m) => m.direction === "in");
     return {
-      unread: smsStore.unread(),
+      unread: routerUnread ?? smsStore.unread(),
       ...(latest
         ? { lastMessage: latest.text, lastMessageTime: latest.timestamp }
         : {}),
     };
+  };
+
+  const isUnread = (id: string) =>
+    smsStore.list().some((m) => m.id === id && m.direction === "in" && !m.read);
+  // Keep the router's total in step until the next poll confirms it.
+  const dropUnread = () => {
+    if (routerUnread !== undefined)
+      routerUnread = Math.max(0, routerUnread - 1);
   };
 
   const publishSms = () => {
@@ -180,7 +193,8 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
         publisher.notifyPlan(update.level, update.snapshot);
       saveUsage();
     },
-    onSms(messages: SmsMessage[]) {
+    onSms(messages: SmsMessage[], counts?: SmsCounts) {
+      routerUnread = counts?.unread;
       const result = smsStore.ingest(messages);
       publishSms();
       // A notification ends when its message is read or gone from the router.
@@ -273,13 +287,17 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
         sms: {
           list: () => smsStore.list(),
           markRead: (id) => {
+            const wasUnread = isUnread(id);
             const ok = smsStore.markRead(id);
+            if (ok && wasUnread) dropUnread();
             clearNotification(id);
             publishSms();
             return ok;
           },
           remove: (id) => {
+            const wasUnread = isUnread(id);
             const ok = smsStore.remove(id);
+            if (ok && wasUnread) dropUnread();
             clearNotification(id);
             publishSms();
             return ok;
