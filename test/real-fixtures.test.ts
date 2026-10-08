@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   parseConnection,
   parseOperator,
+  parseSendStatus,
   parseSignal,
   parseSmsCounts,
   parseSmsList,
@@ -101,5 +102,17 @@ test("real: sms/sms-count", () => {
   assert.deepEqual(parseSmsCounts(real("sms-sms-count")), {
     inbox: 87,
     unread: 33,
+  });
+});
+
+// Recorded while sending one ASCII message; the number is replaced.
+test("real: sms/send-status is pending, then done", () => {
+  assert.deepEqual(parseSendStatus(real("sms-send-status-pending")), {
+    done: false,
+    ok: false,
+  });
+  assert.deepEqual(parseSendStatus(real("sms-send-status-done")), {
+    done: true,
+    ok: true,
   });
 });

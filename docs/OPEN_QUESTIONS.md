@@ -56,8 +56,8 @@ code and docs get updated.
 
 | ID | Question | Recommendation | Blocks |
 |---|---|---|---|
-| Q1 | ~~Real router responses~~ Captured 2026-10-07 on a B311-221 (11.0.2.2): login mode `password_type` 4, field names pinned, round of data requests about 1 s. Still open: other firmware versions, and the `send-status` answer | Re-run `scripts/capture-fixtures.mjs` on other firmware if reports come in | `test/fixtures/real/` |
-| Q3 | SMS encoding for non-ASCII text, behaviour with concurrent sessions | Test with the real router | SPEC §13.3 |
+| Q1 | ~~Real router responses~~ Captured 2026-10-07 on a B311-221 (11.0.2.2): login mode `password_type` 4, field names pinned, round of data requests about 1 s. Still open: other firmware versions | Re-run `scripts/capture-fixtures.mjs` on other firmware if reports come in | `test/fixtures/real/` |
+| Q3 | Half answered. An ASCII message sent from the plugin on 2026-10-08 arrived, as 7-bit (`gsm7`); `send-status` answered pending twice, then with the number in `SucPhone`, which the parser reads correctly. Still open: non-ASCII text (UCS2, `Reserved=0`, D22), and behaviour with concurrent sessions | Send one message with `ü`, `ß` and `€` and check it arrives intact | SPEC §13.3 |
 | Q5 | Are the tile stale times (D16) right for the real polling rates? Router link, plan and SMS paths must be re-emitted at least every 5 minutes | Publish these paths on every poll, not only on change | Tile accuracy |
 | Q6 | Are the send limits (D20) right for you, and should sending also work when server security is disabled (D19)? | Keep as is; turn on Signal K security if the boat network is shared | `src/routes.ts` |
 | Q7 | The webapp's phone layout clips the last SMS in the list box, and has no tabs | Fine for now; refine after seeing real use | `public/lib/styles.js` |
