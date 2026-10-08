@@ -1,4 +1,4 @@
-# signalk-huawei-b311-221
+# @boathacks/signalk-huawei-b311-221
 
 A [Signal K](https://signalk.org) server plugin for the Huawei B311-221 LTE
 router, the common boat internet box. It publishes signal quality,

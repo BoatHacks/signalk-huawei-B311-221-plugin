@@ -122,7 +122,7 @@ do_start() {
   disown -a 2>/dev/null || true
   wait_for_server
   say "Signal K:      http://localhost:$SK_PORT   (admin UI at /admin)"
-  say "Plugin webapp: http://localhost:$SK_PORT/$PLUGIN_ID/"
+  say "Plugin webapp: http://localhost:$SK_PORT/@boathacks/$PLUGIN_ID/"
   say "Mock router:   http://127.0.0.1:$MOCK_PORT   (RSRP $MOCK_RSRP dBm)"
   say "Logs:          $DEV/server.log, $DEV/mock.log"
 }

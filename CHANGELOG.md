@@ -4,6 +4,9 @@
 
 ## 0.1.0 - 2026-10-08
 
+- Published as `@boathacks/signalk-huawei-b311-221`: npm refused the unscoped
+  name as spam. The plugin id and REST paths are unchanged.
+
 - First release: router client, signal / connection / traffic publishing under
   `networking.lte.*`, plugin-tracked data plan with notifications, SMS receive
   and send, REST API, offline web page, Status Tiles example set, and a fixture

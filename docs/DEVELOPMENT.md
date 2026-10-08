@@ -26,7 +26,7 @@ scripts/dev-server.sh stop
 Then open:
 
 - Signal K: http://localhost:3000 (admin UI at `/admin`)
-- The plugin's page: http://localhost:3000/signalk-huawei-b311-221/
+- The plugin's page: http://localhost:3000/@boathacks/signalk-huawei-b311-221/
 - Its data: http://localhost:3000/signalk/v1/api/vessels/self/networking/lte
 
 Environment: `SK_DEV_DIR`, `SK_PORT` (3000), `MOCK_PORT` (8099), `MOCK_RSRP`

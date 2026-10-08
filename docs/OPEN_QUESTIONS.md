@@ -9,7 +9,7 @@ code and docs get updated.
 
 | ID | Question | Chosen | Why | Revise by |
 |---|---|---|---|---|
-| D1 | Licence and package name | MIT, unscoped `signalk-huawei-b311-221` | You picked the recommended option | Edit `LICENSE`, `package.json` |
+| D1 | Licence and package name | MIT, unscoped `signalk-huawei-b311-221` (changed to `@boathacks/signalk-huawei-b311-221`, see D44) | You picked the recommended option | Edit `LICENSE`, `package.json` |
 | D2 | Copyright holder in LICENSE | "BoatHacks contributors" | Neutral default | Edit `LICENSE` |
 | D3 | Git flow | Commit to `claude/spec-architecture-draft`, no PR | You picked the recommended option | Open a PR when ready |
 | D4 | XML parsing | Dependency `fast-xml-parser` | Router speaks XML; avoid hand-rolled parsing (ARCHITECTURE §4) | Replace in `src/router-client.ts` |
@@ -52,6 +52,7 @@ code and docs get updated.
 | D41 | Cell identifiers in committed fixtures | `cell_id`, `enodeb_id`, `tac`, `lac`, `cellinfo` replaced with made-up values of the same format | Together they locate the cell tower, so roughly where the boat was | `test/fixtures/real/README.md` |
 | D42 | SMS paging | Each SMS poll reads the router's totals (`sms/sms-count`) and the newest page (20). If the inbox total grew by more than a page since the last poll, further pages are read (at most 5 pages, 100 messages) so no new message is missed. The unread count published and shown in the status is the router's own `LocalUnread`, kept in step locally when a message is marked read or deleted. Older messages are not browsable in the webapp; use the router's own page | The owner only needs new messages as notifications and readable in the webapp. The real inbox had 87 of 500 messages | `src/pollers.ts`, `src/runtime.ts`, `src/router-client.ts` |
 | D43 | Delivery reports | Inbox entries with `SmsType` 7 are dropped when the list is parsed, so they are no message, no notification and not in the webapp. Seen on 2026-10-08: the router files a report with empty text in the inbox about five seconds after each message it sends, unread, from the recipient's number. The router also counts them as unread, so each poll takes the unread reports it saw on the pages it read off the router's unread total; reports older than those pages are not seen and still inflate it | Every sent message would otherwise have raised a "new SMS" notification with no text. The type is the signal, not empty text | `src/parsers.ts` |
+| D44 | npm package name | `@boathacks/signalk-huawei-b311-221`, published with `publishConfig.access: public`. The Signal K plugin id (`signalk-huawei-b311-221`), the REST paths under `/plugins/<id>/` and the stored settings are unchanged; only the webapp URL gains the scope (`/@boathacks/signalk-huawei-b311-221/`) | npm's spam filter rejected the unscoped name with a 403 on the first publish on 2026-10-08 | `package.json`, `package-lock.json`, `docs/PUBLISHING.md` |
 
 ## Open questions (need you or the hardware)
 

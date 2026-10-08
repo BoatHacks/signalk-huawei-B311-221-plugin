@@ -75,6 +75,13 @@ template if you want it later.
 
 npm cannot configure a trusted publisher for a package that does not exist yet.
 
+The unscoped name `signalk-huawei-b311-221` was refused by npm's spam filter
+(403, 2026-10-08), so the package is `@boathacks/signalk-huawei-b311-221` (D44).
+A scope needs an npm user or org of that name first.
+
+0. Create the `boathacks` org on npmjs.com (https://www.npmjs.com/org/create, the
+   free plan is enough for public packages) and make sure your account is an
+   owner.
 1. `npm publish` from a clean checkout, with your 2FA one-time code
    (`--otp=<code>`). The build runs through `prepack`.
 2. On npmjs.com: the package, Settings, Trusted Publisher, GitHub Actions. Set
@@ -83,5 +90,5 @@ npm cannot configure a trusted publisher for a package that does not exist yet.
 3. From then on, publishing a GitHub release runs `publish.yml` and publishes
    with no token.
 
-The registry's JSON for the package appears after its next nightly run, at
-`https://signalk.org/signalk-plugin-registry/plugins/signalk-huawei-b311-221.json`.
+The registry lists the package after its next nightly run, see
+https://signalk.org/signalk-plugin-registry/.
