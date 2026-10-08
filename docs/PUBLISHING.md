@@ -59,21 +59,17 @@ sessions.
 1. ~~**Pick the version.**~~ Done: `package.json` and the lockfile say
    `0.1.0`, and the `CHANGELOG.md` section is dated 2026-10-08.
 2. ~~**Capture a real router.**~~ Done, see above.
-3. **Merge to `main` and check CI.** The work is on
-   `claude/spec-architecture-draft`. The CI evidence above is for commit
-   `7823587`; look at the runs for the commit you release.
-4. **Set the GitHub repo metadata** (not scored, but the registry skill asks for
-   it). Needs a GitHub login with admin rights on the repo:
+3. ~~**Merge to `main` and check CI.**~~ Done on 2026-10-08. `main` was created
+   from commit `9b499ff` (the 0.1.0 commit) and made the default branch. The
+   `Tests` workflow passed on it, and the registry's `SignalK Plugin CI` passed
+   on the same commit on the working branch; look at the runs for whatever
+   commit you actually release.
+4. ~~**Set the GitHub repo metadata.**~~ Done on 2026-10-08: description,
+   homepage (the npm package page) and the topics `signalk`, `signalk-plugin`,
+   `marine`, `lte`, `huawei`, `sms`.
 
-   ```sh
-   REPO=BoatHacks/signalk-huawei-B311-221-plugin
-   PKG=signalk-huawei-b311-221
-   gh api --method PATCH "repos/$REPO" \
-     -f description="Signal K plugin for the Huawei B311-221 LTE router: signal, connection, data plan and SMS" \
-     -f homepage="https://www.npmjs.com/package/$PKG"
-   jq -n '{names:["signalk","signalk-plugin","marine","lte","huawei","sms"]}' |
-     gh api --method PUT "repos/$REPO/topics" --input -
-   ```
+Branch protection is not set up. The `oss-branch-protection` skill has the
+template if you want it later.
 
 ## The first publish is manual
 
