@@ -71,7 +71,15 @@ sessions.
 Branch protection is not set up. The `oss-branch-protection` skill has the
 template if you want it later.
 
-## The first publish is manual
+## The first publish was manual (done)
+
+`@boathacks/signalk-huawei-b311-221@0.1.0` was published by hand on 2026-10-08
+from commit `0765b26`, with a one-time code, and the trusted publisher was then
+set up on npmjs.com (repository `BoatHacks/signalk-huawei-B311-221-plugin`,
+workflow `publish.yml`, no environment). npm created a `0.0.0-stage` placeholder
+at the start of that publish; it is harmless and `latest` is `0.1.0`. The
+automatic path has not been exercised yet: the next release is its first test.
+What was done, for reference:
 
 npm cannot configure a trusted publisher for a package that does not exist yet.
 
@@ -92,3 +100,13 @@ A scope needs an npm user or org of that name first.
 
 The registry lists the package after its next nightly run, see
 https://signalk.org/signalk-plugin-registry/.
+
+## Releasing a later version
+
+1. Bump the version in `package.json` and the lockfile, and move the changelog
+   section (a separate step from releasing).
+2. Merge to `main` and wait for both CI workflows to pass on that commit.
+3. Publish a GitHub release for the tag. `publish.yml` runs lint, typecheck and
+   the tests, then `npm publish` through OIDC. No token and no one-time code.
+4. Do not create a release for a version that is already on npm: the workflow
+   would fail.
