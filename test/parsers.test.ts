@@ -10,6 +10,7 @@ import {
   parseSignal,
   parseSmsCounts,
   parseSmsList,
+  parseSmsPage,
   parseTraffic,
   routerDateToIso,
 } from "../src/parsers.ts";
@@ -303,5 +304,29 @@ test("parseSmsList drops status reports and keeps unknown types", () => {
   assert.deepEqual(
     list.map((m) => m.index),
     [1, 3, 4],
+  );
+});
+
+test("parseSmsPage counts only the unread delivery reports", () => {
+  const item = (index: number, type: string, stat: string) => ({
+    Index: String(index),
+    Smstat: stat,
+    Phone: "+491700000000",
+    Content: "",
+    Date: "2026-10-05 17:45:11",
+    SmsType: type,
+  });
+  const page = parseSmsPage(
+    {
+      Messages: {
+        Message: [item(1, "7", "0"), item(2, "7", "1"), item(3, "1", "0")],
+      },
+    },
+    { nowMs: 0 },
+  );
+  assert.equal(page.unreadReports, 1);
+  assert.deepEqual(
+    page.messages.map((m) => m.index),
+    [3],
   );
 });

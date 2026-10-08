@@ -16,7 +16,7 @@ import {
   parseSendStatus,
   parseSignal,
   parseSmsCounts,
-  parseSmsList,
+  parseSmsPage,
   parseTraffic,
 } from "./parsers.ts";
 import type {
@@ -24,6 +24,7 @@ import type {
   SignalSample,
   SmsCounts,
   SmsMessage,
+  SmsPage,
   TrafficSample,
 } from "./types.ts";
 import { type ParsedResponse, parseResponseXml } from "./xml.ts";
@@ -279,7 +280,12 @@ export class RouterClient {
   }
 
   /** Inbox messages, paged on the router. */
-  listSms(opts: ListSmsOptions = {}): Promise<SmsMessage[]> {
+  async listSms(opts: ListSmsOptions = {}): Promise<SmsMessage[]> {
+    return (await this.listSmsPage(opts)).messages;
+  }
+
+  /** Like listSms, and says how many unread delivery reports were left out. */
+  listSmsPage(opts: ListSmsOptions = {}): Promise<SmsPage> {
     const page = Math.max(1, Math.floor(opts.page ?? 1) || 1);
     const limit = Math.min(
       MAX_PAGE_SIZE,
@@ -301,7 +307,7 @@ export class RouterClient {
           ["UnreadPreferred", opts.unreadPreferred ? 1 : 0],
         ]),
       );
-      return parseSmsList(data, { nowMs: this.now(), direction: "in" });
+      return parseSmsPage(data, { nowMs: this.now(), direction: "in" });
     });
   }
 

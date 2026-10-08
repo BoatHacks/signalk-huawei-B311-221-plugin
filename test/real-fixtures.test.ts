@@ -8,6 +8,7 @@ import {
   parseSignal,
   parseSmsCounts,
   parseSmsList,
+  parseSmsPage,
   parseTraffic,
   routerDateToIso,
 } from "../src/parsers.ts";
@@ -129,4 +130,13 @@ test("real: delivery reports (SmsType 7) are not messages", () => {
       [40092, "test um 14:51 lokalzeit"],
     ],
   );
+});
+
+test("real: a page says how many unread delivery reports it dropped", () => {
+  const page = parseSmsPage(real("sms-sms-list-with-reports"), {
+    nowMs: Date.parse("2026-10-08T13:00:00Z"),
+    direction: "in",
+  });
+  assert.equal(page.messages.length, 2);
+  assert.equal(page.unreadReports, 2);
 });

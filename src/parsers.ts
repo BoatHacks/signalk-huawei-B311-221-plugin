@@ -5,6 +5,7 @@ import type {
   SignalSample,
   SmsCounts,
   SmsMessage,
+  SmsPage,
   TrafficSample,
 } from "./types.ts";
 
@@ -310,22 +311,33 @@ export function parseSmsList(
   obj: unknown,
   ctx: { nowMs: number; direction?: "in" | "out" },
 ): SmsMessage[] {
+  return parseSmsPage(obj, ctx).messages;
+}
+
+/** Like parseSmsList, and also counts the unread delivery reports it drops. */
+export function parseSmsPage(
+  obj: unknown,
+  ctx: { nowMs: number; direction?: "in" | "out" },
+): SmsPage {
   const f = FIELDS.smsList;
   const container = pick(obj, f.container);
   const items = asList(
     isObj(container) ? pick(container, f.item) : pick(obj, f.item),
   );
   const out: SmsMessage[] = [];
+  let unreadReports = 0;
   for (const item of items) {
     const index = parseInteger(pick(item, FIELDS.sms.index));
     if (index === undefined || index < 0) continue;
-    if (parseInteger(pick(item, FIELDS.sms.type)) === SMS_TYPE_STATUS_REPORT)
+    const status = parseInteger(pick(item, FIELDS.sms.status));
+    if (parseInteger(pick(item, FIELDS.sms.type)) === SMS_TYPE_STATUS_REPORT) {
+      if (status === 0) unreadReports++;
       continue;
+    }
     const peer = pickText(item, FIELDS.sms.phone) ?? "";
     const rawDate = pickText(item, FIELDS.sms.date) ?? "";
     const rawContent = isObj(item) ? pick(item, FIELDS.sms.content) : undefined;
     const content = typeof rawContent === "string" ? rawContent : "";
-    const status = parseInteger(pick(item, FIELDS.sms.status));
     out.push({
       id: smsId(index, rawDate, peer),
       index,
@@ -336,7 +348,7 @@ export function parseSmsList(
       read: status !== 0,
     });
   }
-  return out;
+  return { messages: out, unreadReports };
 }
 
 export interface SendStatus {

@@ -204,7 +204,7 @@ export async function startMockRouter(opts = {}) {
         const items = slice
           .map(
             (m) =>
-              `<Message><Smstat>${m.stat ?? 0}</Smstat><Index>${m.index}</Index><Phone>${esc(m.phone)}</Phone><Content>${esc(m.content)}</Content><Date>${m.date}</Date></Message>`,
+              `<Message><Smstat>${m.stat ?? 0}</Smstat><Index>${m.index}</Index><Phone>${esc(m.phone)}</Phone><Content>${esc(m.content)}</Content><Date>${m.date}</Date><SmsType>${m.type ?? 1}</SmsType></Message>`,
           )
           .join("");
         return send(

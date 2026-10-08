@@ -50,7 +50,10 @@ function harness(
       at: 0,
     } satisfies TrafficSample),
     getSmsCounts: wrap("smsCounts", { inbox: 0, unread: 0 }),
-    listSms: wrap("sms", [] as SmsMessage[]),
+    listSmsPage: wrap("sms", {
+      messages: [] as SmsMessage[],
+      unreadReports: 0,
+    }),
   } as unknown as RouterPort;
   const pollers = createPollers({
     router,
@@ -217,7 +220,7 @@ test("a throwing handler does not stop polling", async () => {
     getOperator: async () => ({}),
     getConnection: async () => ({ connected: true, serviceAvailable: true }),
     getTraffic: async () => ({ uploadBytes: 1, downloadBytes: 1, at: 0 }),
-    listSms: async () => [],
+    listSmsPage: async () => ({ messages: [], unreadReports: 0 }),
   } as unknown as RouterPort;
   const pollers = createPollers({
     router,
@@ -296,7 +299,10 @@ test("a busy router session is treated like an unreachable router: back off and 
   await h.pollers.stop();
 });
 
-function smsHarness(counts: Array<{ inbox: number; unread: number } | Error>) {
+function smsHarness(
+  counts: Array<{ inbox: number; unread: number } | Error>,
+  reportsPerPage = 0,
+) {
   const timers = createFakeTimers();
   const pages: number[] = [];
   const delivered: Array<{ n: number; counts: unknown }> = [];
@@ -313,10 +319,13 @@ function smsHarness(counts: Array<{ inbox: number; unread: number } | Error>) {
       if (c instanceof Error) throw c;
       return c;
     },
-    listSms: async (opts?: { page?: number }) => {
+    listSmsPage: async (opts?: { page?: number }) => {
       const page = opts?.page ?? 1;
       pages.push(page);
-      return Array.from({ length: 20 }, (_, i) => msg(page * 100 + i));
+      return {
+        messages: Array.from({ length: 20 }, (_, i) => msg(page * 100 + i)),
+        unreadReports: reportsPerPage,
+      };
     },
   } as unknown as RouterPort;
   const pollers = createPollers({
@@ -402,5 +411,37 @@ test("unusable totals do not stop the messages", async () => {
   h.pollers.start();
   await h.timers.flush();
   assert.deepEqual(h.delivered, [{ n: 20, counts: undefined }]);
+  await h.pollers.stop();
+});
+
+test("unread delivery reports are taken off the router's unread total", async () => {
+  const h = smsHarness([{ inbox: 87, unread: 37 }], 2);
+  h.pollers.start();
+  await h.timers.flush();
+  assert.deepEqual(h.delivered, [{ n: 20, counts: { inbox: 87, unread: 35 } }]);
+  await h.pollers.stop();
+});
+
+test("reports on every page of a burst are all taken off", async () => {
+  const h = smsHarness(
+    [
+      { inbox: 10, unread: 10 },
+      { inbox: 55, unread: 55 },
+    ],
+    1,
+  );
+  h.pollers.start();
+  await h.timers.flush();
+  await h.timers.advance(60 * SEC);
+  // Pages 1-3 each dropped one unread report.
+  assert.deepEqual(h.delivered[1]?.counts, { inbox: 55, unread: 52 });
+  await h.pollers.stop();
+});
+
+test("the unread total never goes below zero", async () => {
+  const h = smsHarness([{ inbox: 5, unread: 1 }], 3);
+  h.pollers.start();
+  await h.timers.flush();
+  assert.deepEqual(h.delivered[0]?.counts, { inbox: 5, unread: 0 });
   await h.pollers.stop();
 });

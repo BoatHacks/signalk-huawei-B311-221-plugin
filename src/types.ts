@@ -73,6 +73,13 @@ export interface SmsCounts {
   unread: number;
 }
 
+/** One page of the inbox. */
+export interface SmsPage {
+  messages: SmsMessage[];
+  /** Unread delivery reports left out of `messages`; the router counts them as unread. */
+  unreadReports: number;
+}
+
 export interface SmsMessage {
   /** Stable id: derived from router index, date and sender (see SmsStore). */
   id: string;

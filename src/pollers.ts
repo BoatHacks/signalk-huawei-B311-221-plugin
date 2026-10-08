@@ -5,6 +5,7 @@ import type {
   SignalSample,
   SmsCounts,
   SmsMessage,
+  SmsPage,
   TrafficSample,
 } from "./types.ts";
 
@@ -15,7 +16,7 @@ export interface RouterPort {
   getConnection(): Promise<ConnectionStatus>;
   getTraffic(): Promise<TrafficSample>;
   getSmsCounts(): Promise<SmsCounts>;
-  listSms(opts?: { page?: number }): Promise<SmsMessage[]>;
+  listSmsPage(opts?: { page?: number }): Promise<SmsPage>;
 }
 
 export interface PollerHandlers {
@@ -163,7 +164,9 @@ export function createPollers(opts: PollersOptions): Pollers {
           // problems still surface through the list call below.
           if (!(e instanceof Error && e.name === "BadResponse")) throw e;
         }
-        const messages = await router.listSms();
+        const first = await router.listSmsPage();
+        const messages = first.messages;
+        let unreadReports = first.unreadReports;
         // A page holds only the newest messages. If the inbox grew by more
         // than that since the last poll, read further back so none is missed.
         if (counts && lastInbox !== undefined) {
@@ -173,13 +176,19 @@ export function createPollers(opts: PollersOptions): Pollers {
             messages.length < wanted && page <= SMS_BURST_PAGES;
             page++
           ) {
-            const more = await router.listSms({ page });
-            if (more.length === 0) break;
-            messages.push(...more);
+            const more = await router.listSmsPage({ page });
+            if (more.messages.length === 0) break;
+            messages.push(...more.messages);
+            unreadReports += more.unreadReports;
           }
         }
         lastInbox = counts?.inbox;
-        if (!stopped) guard("sms", () => handlers.onSms(messages, counts));
+        // The router counts unread delivery reports as unread messages.
+        const adjusted = counts && {
+          inbox: counts.inbox,
+          unread: Math.max(0, counts.unread - unreadReports),
+        };
+        if (!stopped) guard("sms", () => handlers.onSms(messages, adjusted));
       }
       return { ok: true };
     } catch (e) {

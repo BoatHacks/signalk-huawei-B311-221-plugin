@@ -958,3 +958,31 @@ test("listSms asks for the page it is given", async () => {
     assert.equal((await client.listSms({ page: 3 })).length, 5);
   });
 });
+
+test("listSmsPage reports the unread delivery reports it left out", async () => {
+  const sms = [
+    {
+      index: 3,
+      phone: "+491700000000",
+      content: "",
+      date: "2026-10-05 17:45:11",
+      stat: 0,
+      type: 7,
+    },
+    {
+      index: 2,
+      phone: "+491700000000",
+      content: "hi",
+      date: "2026-10-05 17:44:11",
+      stat: 0,
+    },
+  ];
+  await withRouter({ sms }, async (_router, make) => {
+    const page = await make().listSmsPage();
+    assert.equal(page.unreadReports, 1);
+    assert.deepEqual(
+      page.messages.map((m) => m.index),
+      [2],
+    );
+  });
+});
