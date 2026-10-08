@@ -34,15 +34,35 @@ On commit `7823587` (2026-10-07) both workflows passed in full:
 That is a good sign for the registry's load, activate and schema checks, but the
 registry's own score is only computed after publishing.
 
+## Checked on real hardware
+
+On 2026-10-07 and 2026-10-08, against a B311-221 on software 11.0.2.2 (details
+in `docs/OPEN_QUESTIONS.md`):
+
+- Response field names were pinned from a capture (`test/fixtures/real/`).
+- The plugin's own `RouterClient` logged in (`password_type` 4), reused its
+  session, read signal, operator, connection, traffic and SMS totals, and
+  logged out.
+- One ASCII and one non-ASCII message were sent through it and arrived intact;
+  two replies from a phone were received and decoded, and their dates are the
+  router's local time.
+- That turned up two bugs that the mock router could not show: uptime and WAN IP
+  are not in `monitoring/status`, and the router files delivery reports in the
+  inbox. Both are fixed.
+
+Not checked: the whole plugin running in a Signal K server against the real
+router (only the client was), other firmware versions, and concurrent admin
+sessions.
+
 ## Before the first release
 
-1. **Pick the version.** `package.json` says `0.0.0`. Use `0.1.0` for the first
-   release and move the `CHANGELOG.md` "Unreleased" section under it.
-2. **Capture a real router** (`scripts/capture-fixtures.mjs`, see
-   `scripts/README.md`) and check the parsers against it. Until then every
-   response field name is a guess (`docs/OPEN_QUESTIONS.md`, Q1). This is the
-   one thing that should not ship unverified.
-3. **Set the GitHub repo metadata** (not scored, but the registry skill asks for
+1. ~~**Pick the version.**~~ Done: `package.json` and the lockfile say
+   `0.1.0`, and the `CHANGELOG.md` section is dated 2026-10-08.
+2. ~~**Capture a real router.**~~ Done, see above.
+3. **Merge to `main` and check CI.** The work is on
+   `claude/spec-architecture-draft`. The CI evidence above is for commit
+   `7823587`; look at the runs for the commit you release.
+4. **Set the GitHub repo metadata** (not scored, but the registry skill asks for
    it). Needs a GitHub login with admin rights on the repo:
 
    ```sh

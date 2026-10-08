@@ -7,11 +7,14 @@ and lets you read and send SMS from a small web page.
 
 ![Webapp](docs/images/webapp.png)
 
-> **Status: pre-release.** The code is tested against a mock router built
-> from the protocol of the community client
-> [huawei-lte-api](https://github.com/Salamek/huawei-lte-api). It has **not
-> yet been run against a real B311-221**, so response field names are
-> unverified (see [docs/SPEC.md](docs/SPEC.md) §13). Do not rely on it yet.
+> **Status: early release.** Checked against one real B311-221 (software
+> 11.0.2.2, WebUI 11.0.2.1): login, signal, connection, traffic, receiving
+> SMS, and sending SMS as 7-bit and UCS2 text all work. The whole plugin has
+> been run inside a Signal K server only against a mock router, and other
+> firmware versions are untested. If your router answers differently, please
+> open an issue (`scripts/capture-fixtures.mjs` records what it sends).
+> Details: [docs/SPEC.md](docs/SPEC.md) §13 and
+> [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md).
 
 ## What you get
 
