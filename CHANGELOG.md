@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.3 - 2026-10-08
+
 - Messages sent from the web page now appear in the message list, ordered by
   time with the received ones.
 - A delivery report from the router now marks the matching sent message as
