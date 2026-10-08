@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.1.2 - 2026-10-08
+
+- Web page: on phone widths (below 900 px) it now has Status and SMS tabs,
+  with the unread count on the SMS tab. Wide screens still show everything.
+- Web page: the SMS list height follows the screen and no longer cuts off the
+  last message.
+
 ## 0.1.1 - 2026-10-08
 
 - No code changes from 0.1.0. Published through the GitHub release workflow
