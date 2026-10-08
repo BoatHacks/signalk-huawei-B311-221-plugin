@@ -6,6 +6,7 @@ import type {
   SmsCounts,
   SmsMessage,
   SmsPage,
+  SmsReport,
   TrafficSample,
 } from "./types.ts";
 
@@ -27,7 +28,11 @@ export interface PollerHandlers {
   }): void;
   onTraffic(sample: TrafficSample): void;
   /** `counts` are the router's own totals; missing when that call failed. */
-  onSms(messages: SmsMessage[], counts?: SmsCounts): void;
+  onSms(
+    messages: SmsMessage[],
+    counts?: SmsCounts,
+    reports?: SmsReport[],
+  ): void;
   /** Called only when the link state changes. */
   onLink(state: LinkState, detail?: string): void;
 }
@@ -167,6 +172,7 @@ export function createPollers(opts: PollersOptions): Pollers {
         const first = await router.listSmsPage();
         const messages = first.messages;
         let unreadReports = first.unreadReports;
+        const reports = [...first.reports];
         // A page holds only the newest messages. If the inbox grew by more
         // than that since the last poll, read further back so none is missed.
         if (counts && lastInbox !== undefined) {
@@ -180,6 +186,7 @@ export function createPollers(opts: PollersOptions): Pollers {
             if (more.messages.length === 0) break;
             messages.push(...more.messages);
             unreadReports += more.unreadReports;
+            reports.push(...more.reports);
           }
         }
         lastInbox = counts?.inbox;
@@ -188,7 +195,8 @@ export function createPollers(opts: PollersOptions): Pollers {
           inbox: counts.inbox,
           unread: Math.max(0, counts.unread - unreadReports),
         };
-        if (!stopped) guard("sms", () => handlers.onSms(messages, adjusted));
+        if (!stopped)
+          guard("sms", () => handlers.onSms(messages, adjusted, reports));
       }
       return { ok: true };
     } catch (e) {

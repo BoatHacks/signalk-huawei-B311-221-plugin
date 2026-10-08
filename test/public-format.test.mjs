@@ -175,3 +175,13 @@ test("a refused write is told apart: not signed in, or signed in without admin r
     assert.equal(writeDenial(status, true), null, String(status));
   }
 });
+
+test("deliveryMark shows only what is worth a mark on sent messages", async () => {
+  const { deliveryMark } = await import("../public/lib/format.js");
+  const out = (delivery) => ({ direction: "out", delivery });
+  assert.equal(deliveryMark(out("delivered")).symbol, "\u2713");
+  assert.equal(deliveryMark(out("failed")).kind, "err");
+  assert.equal(deliveryMark(out("unknown")).kind, "warn");
+  assert.equal(deliveryMark(out("sent")), null);
+  assert.equal(deliveryMark({ direction: "in" }), null);
+});

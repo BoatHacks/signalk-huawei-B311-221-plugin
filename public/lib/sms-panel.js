@@ -1,7 +1,7 @@
 // SMS inbox and compose form. All message content is set via textContent.
 
 import { el } from "./dom.js";
-import { smsSegments } from "./format.js";
+import { deliveryMark, smsSegments } from "./format.js";
 import { baseCss } from "./styles.js";
 
 const css = `
@@ -11,6 +11,10 @@ const css = `
   .msg.unread { border-color: rgba(var(--color-teal-rgb), 0.9); }
   .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted); }
   .peer { color: var(--text-main); font-weight: 600; }
+  .mark { font-weight: 600; }
+  .mark.ok { color: var(--color-green); }
+  .mark.err { color: var(--color-red); }
+  .mark.warn { color: var(--color-orange); }
   .dot { width: 10px; height: 10px; background: var(--color-teal); display: inline-block; }
   .body { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -97,6 +101,14 @@ export class LteSms extends HTMLElement {
           `${m.direction === "out" ? "To " : ""}${m.peer ?? "?"}`,
         ),
       );
+      const mark = deliveryMark(m);
+      if (mark) {
+        const s = el("span", `mark ${mark.kind}`, mark.symbol);
+        s.setAttribute("role", "img");
+        s.setAttribute("aria-label", mark.label);
+        s.title = mark.label;
+        head.append(s);
+      }
       const when = Date.parse(m.timestamp ?? "");
       head.append(
         el(
@@ -117,8 +129,11 @@ export class LteSms extends HTMLElement {
         const d = el("button", "", "Delete");
         d.type = "button";
         d.addEventListener("click", () => {
-          if (globalThis.confirm("Delete this message from the router?"))
-            handlers.remove?.(m.id);
+          const question =
+            m.direction === "out"
+              ? "Remove this message from the sent history?"
+              : "Delete this message from the router?";
+          if (globalThis.confirm(question)) handlers.remove?.(m.id);
         });
         row.append(d);
         li.append(row);

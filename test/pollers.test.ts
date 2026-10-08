@@ -53,6 +53,7 @@ function harness(
     listSmsPage: wrap("sms", {
       messages: [] as SmsMessage[],
       unreadReports: 0,
+      reports: [],
     }),
   } as unknown as RouterPort;
   const pollers = createPollers({
@@ -220,7 +221,7 @@ test("a throwing handler does not stop polling", async () => {
     getOperator: async () => ({}),
     getConnection: async () => ({ connected: true, serviceAvailable: true }),
     getTraffic: async () => ({ uploadBytes: 1, downloadBytes: 1, at: 0 }),
-    listSmsPage: async () => ({ messages: [], unreadReports: 0 }),
+    listSmsPage: async () => ({ messages: [], unreadReports: 0, reports: [] }),
   } as unknown as RouterPort;
   const pollers = createPollers({
     router,
@@ -325,6 +326,7 @@ function smsHarness(
       return {
         messages: Array.from({ length: 20 }, (_, i) => msg(page * 100 + i)),
         unreadReports: reportsPerPage,
+        reports: [],
       };
     },
   } as unknown as RouterPort;

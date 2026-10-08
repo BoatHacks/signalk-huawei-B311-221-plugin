@@ -6,6 +6,7 @@ import type {
   SmsCounts,
   SmsMessage,
   SmsPage,
+  SmsReport,
   TrafficSample,
 } from "./types.ts";
 
@@ -325,17 +326,24 @@ export function parseSmsPage(
     isObj(container) ? pick(container, f.item) : pick(obj, f.item),
   );
   const out: SmsMessage[] = [];
+  const reports: SmsReport[] = [];
   let unreadReports = 0;
   for (const item of items) {
     const index = parseInteger(pick(item, FIELDS.sms.index));
     if (index === undefined || index < 0) continue;
     const status = parseInteger(pick(item, FIELDS.sms.status));
-    if (parseInteger(pick(item, FIELDS.sms.type)) === SMS_TYPE_STATUS_REPORT) {
-      if (status === 0) unreadReports++;
-      continue;
-    }
     const peer = pickText(item, FIELDS.sms.phone) ?? "";
     const rawDate = pickText(item, FIELDS.sms.date) ?? "";
+    if (parseInteger(pick(item, FIELDS.sms.type)) === SMS_TYPE_STATUS_REPORT) {
+      if (status === 0) unreadReports++;
+      reports.push({
+        id: smsId(index, rawDate, peer),
+        peer,
+        timestamp:
+          routerDateToIso(rawDate) ?? new Date(ctx.nowMs).toISOString(),
+      });
+      continue;
+    }
     const rawContent = isObj(item) ? pick(item, FIELDS.sms.content) : undefined;
     const content = typeof rawContent === "string" ? rawContent : "";
     out.push({
@@ -348,7 +356,7 @@ export function parseSmsPage(
       read: status !== 0,
     });
   }
-  return { messages: out, unreadReports };
+  return { messages: out, unreadReports, reports };
 }
 
 export interface SendStatus {

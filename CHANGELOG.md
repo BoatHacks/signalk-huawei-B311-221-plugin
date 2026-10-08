@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Messages sent from the web page now appear in the message list, ordered by
+  time with the received ones.
+- A delivery report from the router now marks the matching sent message as
+  delivered (a check mark). Failed sends show a cross.
+
 ## 0.1.2 - 2026-10-08
 
 - Web page: on phone widths (below 900 px) it now has Status and SMS tabs,

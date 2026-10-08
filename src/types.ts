@@ -78,7 +78,29 @@ export interface SmsPage {
   messages: SmsMessage[];
   /** Unread delivery reports left out of `messages`; the router counts them as unread. */
   unreadReports: number;
+  /** The delivery reports on this page, newest first as the router lists them. */
+  reports: SmsReport[];
 }
+
+/**
+ * A delivery report the router filed in the inbox. It has no text: only the
+ * recipient's number and when the report arrived.
+ */
+export interface SmsReport {
+  /** Same derivation as SmsMessage.id, so a report is recognised on later polls. */
+  id: string;
+  peer: string;
+  /** ISO timestamp. */
+  timestamp: string;
+}
+
+/** Progress of an outgoing message. */
+export type SmsDelivery =
+  | "sending"
+  | "sent"
+  | "delivered"
+  | "failed"
+  | "unknown";
 
 export interface SmsMessage {
   /** Stable id: derived from router index, date and sender (see SmsStore). */
@@ -91,6 +113,8 @@ export interface SmsMessage {
   /** ISO timestamp. */
   timestamp: string;
   read: boolean;
+  /** Outgoing messages only. Kept by the plugin, the router has no outbox for us. */
+  delivery?: SmsDelivery;
 }
 
 export interface PluginConfig {

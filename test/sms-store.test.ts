@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { SmsStore, sanitiseSmsText } from "../src/sms-store.ts";
-import type { SmsMessage } from "../src/types.ts";
+import type { SmsMessage, SmsReport } from "../src/types.ts";
 
 class FakeState {
   docs = new Map<string, unknown>();
@@ -199,4 +199,96 @@ test("sanitiseSmsText does not split surrogate pairs", () => {
 
 test("sanitiseSmsText leaves markup as plain text", () => {
   assert.equal(sanitiseSmsText("<b>hi</b>"), "<b>hi</b>");
+});
+
+const SENT_AT = Date.parse("2026-10-08T12:00:00Z");
+const report = (index: number, peer: string, timestamp: string): SmsReport => ({
+  id: `r${index}|${timestamp}|${peer}`,
+  peer,
+  timestamp,
+});
+
+test("a sent message is listed among received ones, ordered by time", async () => {
+  const { store } = await make();
+  store.ingest([msg(1, { timestamp: "2026-10-08T11:00:00Z" })]);
+  const id = store.startSend("+4712345678", "hi", SENT_AT);
+  store.finishSend(id, "sent");
+  store.ingest([
+    msg(1, { timestamp: "2026-10-08T11:00:00Z" }),
+    msg(2, { timestamp: "2026-10-08T13:00:00Z" }),
+  ]);
+  assert.deepEqual(
+    store.list().map((m) => m.direction),
+    ["in", "out", "in"],
+  );
+  assert.equal(store.unread(), 2);
+});
+
+test("a delivery report ticks the oldest waiting message to that number", async () => {
+  const { store } = await make();
+  store.ingest([]);
+  const a = store.startSend("0171 2345678", "first", SENT_AT);
+  const b = store.startSend("0171 2345678", "second", SENT_AT + 60_000);
+  const other = store.startSend("+4999999999", "other", SENT_AT);
+  for (const id of [a, b, other]) store.finishSend(id, "sent");
+  const state = () =>
+    Object.fromEntries(store.list().map((m) => [m.text, m.delivery]));
+  store.ingest([], [report(1, "+49 171 2345678", "2026-10-08T12:02:00Z")]);
+  assert.deepEqual(state(), {
+    first: "delivered",
+    second: "sent",
+    other: "sent",
+  });
+  // The same report on the next poll changes nothing.
+  store.ingest([], [report(1, "+49 171 2345678", "2026-10-08T12:02:00Z")]);
+  assert.equal(state().second, "sent");
+  store.ingest([], [report(2, "+49 171 2345678", "2026-10-08T12:03:00Z")]);
+  assert.equal(state().second, "delivered");
+});
+
+test("a report older than the message, or a day later, matches nothing", async () => {
+  const { store } = await make();
+  store.ingest([]);
+  const id = store.startSend("+4712345678", "x", SENT_AT);
+  store.finishSend(id, "sent");
+  store.ingest([], [report(1, "+4712345678", "2026-10-08T11:00:00Z")]);
+  store.ingest([], [report(2, "+4712345678", "2026-10-09T13:00:00Z")]);
+  assert.equal(store.list()[0]?.delivery, "sent");
+});
+
+test("a failed send is never ticked, and a discarded one disappears", async () => {
+  const { store } = await make();
+  store.ingest([]);
+  const failed = store.startSend("+4712345678", "x", SENT_AT);
+  store.finishSend(failed, "failed");
+  const gone = store.startSend("+4712345678", "y", SENT_AT);
+  store.discardSend(gone);
+  store.ingest([], [report(1, "+4712345678", "2026-10-08T12:00:30Z")]);
+  assert.deepEqual(
+    store.list().map((m) => [m.text, m.delivery]),
+    [["x", "failed"]],
+  );
+});
+
+test("sent messages survive a restart, keep only the newest 50, and can be removed", async () => {
+  const state = new FakeState();
+  const { store } = await make(state);
+  store.ingest([]);
+  let last = "";
+  for (let i = 0; i < 55; i++) {
+    last = store.startSend("+4712345678", `m${i}`, SENT_AT + i * 1000);
+    store.finishSend(last, "sent");
+  }
+  const { store: again } = await make(state);
+  assert.equal(again.list().length, 50);
+  assert.equal(again.list()[0]?.text, "m54");
+  assert.ok(again.remove(last));
+  assert.equal(again.list().length, 49);
+});
+
+test("state saved before sent messages existed still loads", async () => {
+  const state = new FakeState();
+  state.docs.set("sms", { seen: [], messages: [msg(1)] });
+  const { store } = await make(state);
+  assert.equal(store.list().length, 1);
 });

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import type { RuntimeApp, RuntimeOptions } from "../src/runtime.ts";
 import { createRuntime } from "../src/runtime.ts";
-import type { PluginConfig } from "../src/types.ts";
+import type { PluginConfig, SmsMessage } from "../src/types.ts";
 import { createFakeTimers } from "./helpers/fake-timers.ts";
 // @ts-expect-error plain JS test helper
 import { startMockRouter } from "./helpers/mock-router.mjs";
@@ -472,6 +472,19 @@ test("a send the router never confirms is reported as unknown, not as sent", asy
       .routeDeps(() => true)
       .actions.send("+358401234567", "hello");
     assert.deepEqual(result, { status: "unknown" });
+    const sent = runtime.routeDeps(() => true).sms.list();
+    assert.equal(sent[0]?.direction, "out");
+    assert.equal(sent[0]?.delivery, "unknown");
+    // A sent message lives only in the plugin: removing it never calls the router.
+    const deps = runtime.routeDeps(() => true);
+    const before = router.calls.length;
+    await deps.actions.remove(sent[0] as SmsMessage);
+    assert.ok(deps.sms.remove((sent[0] as SmsMessage).id));
+    assert.equal(router.calls.length, before);
+    assert.equal(
+      deps.sms.list().filter((m) => m.direction === "out").length,
+      0,
+    );
   } finally {
     await runtime.stop();
     await router.close();

@@ -153,3 +153,24 @@ export function writeDenial(status, signedIn) {
   if (status === 401) return signedIn ? "admin" : "login";
   return null;
 }
+
+/**
+ * The small mark next to a sent message, or null when there is nothing to
+ * say: received messages, and sent ones the router took but nobody has
+ * confirmed delivered yet.
+ */
+export function deliveryMark(message) {
+  if (message?.direction !== "out") return null;
+  switch (message.delivery) {
+    case "delivered":
+      return { kind: "ok", symbol: "✓", label: "delivered" };
+    case "failed":
+      return { kind: "err", symbol: "✗", label: "sending failed" };
+    case "unknown":
+      return { kind: "warn", symbol: "?", label: "not confirmed as sent" };
+    case "sending":
+      return { kind: "", symbol: "sending…", label: "sending" };
+    default:
+      return null;
+  }
+}

@@ -139,4 +139,9 @@ test("real: a page says how many unread delivery reports it dropped", () => {
   });
   assert.equal(page.messages.length, 2);
   assert.equal(page.unreadReports, 2);
+  assert.deepEqual(
+    page.reports.map((r) => r.peer),
+    ["+491700000000", "+491700000000"],
+  );
+  assert.equal(page.reports[0]?.timestamp.length, 24);
 });

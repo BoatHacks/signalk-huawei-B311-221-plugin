@@ -16,6 +16,7 @@ import type {
   SignalSample,
   SmsCounts,
   SmsMessage,
+  SmsReport,
   StatusSnapshot,
   UsageAccount,
 } from "./types.ts";
@@ -193,9 +194,9 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
         publisher.notifyPlan(update.level, update.snapshot);
       saveUsage();
     },
-    onSms(messages: SmsMessage[], counts?: SmsCounts) {
+    onSms(messages: SmsMessage[], counts?: SmsCounts, reports?: SmsReport[]) {
       routerUnread = counts?.unread;
-      const result = smsStore.ingest(messages);
+      const result = smsStore.ingest(messages, reports);
       publishSms();
       // A notification ends when its message is read or gone from the router.
       for (const id of [...notified]) {
@@ -305,17 +306,28 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
         },
         actions: {
           async send(to, text) {
-            const result = await router.sendSms(to, text);
+            const id = smsStore.startSend(to, text, Date.now());
+            let result: Awaited<ReturnType<typeof router.sendSms>>;
+            try {
+              result = await router.sendSms(to, text);
+            } catch (e) {
+              smsStore.discardSend(id);
+              throw e;
+            }
+            smsStore.finishSend(id, result.status);
             if (result.status === "failed")
               throw new Error("The router reported the message as not sent");
             void pollers?.pollNow("sms").catch(() => {});
             return { status: result.status === "unknown" ? "unknown" : "sent" };
           },
           async markRead(msg) {
+            if (msg.direction === "out") return;
             await confirmUnchanged(msg);
             await router.markRead(msg.index);
           },
           async remove(msg) {
+            // Sent messages exist only in the plugin's own history.
+            if (msg.direction === "out") return;
             await confirmUnchanged(msg);
             await router.deleteSms(msg.index);
           },
