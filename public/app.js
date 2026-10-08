@@ -202,6 +202,11 @@ class LteApp extends HTMLElement {
       this.#pollSms();
       this.#pollStatus();
     },
+    setPlanUsed: async (usedBytes) => {
+      const err = await this.#action(() => api.setPlanUsed(usedBytes));
+      if (err) globalThis.alert(`Could not set the used data: ${err.message}`);
+      this.#pollStatus();
+    },
     resetPlan: async () => {
       await this.#action(() => api.resetPlan());
       this.#pollStatus();
@@ -248,6 +253,7 @@ class LteApp extends HTMLElement {
       stale,
       canWrite: this.#canWrite,
       onReset: this.#handlers.resetPlan,
+      onSetUsed: this.#handlers.setPlanUsed,
       now,
     };
     r.sms.data = {

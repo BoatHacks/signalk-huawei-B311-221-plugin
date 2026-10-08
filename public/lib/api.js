@@ -58,5 +58,7 @@ export const api = {
     request(`sms/${encodeURIComponent(id)}/read`, { method: "POST" }),
   remove: (id) =>
     request(`sms/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  setPlanUsed: (usedBytes) =>
+    request("plan/used", { method: "POST", body: { usedBytes } }),
   resetPlan: () => request("plan/reset", { method: "POST" }),
 };

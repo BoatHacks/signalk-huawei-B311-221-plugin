@@ -185,3 +185,12 @@ test("deliveryMark shows only what is worth a mark on sent messages", async () =
   assert.equal(deliveryMark(out("sent")), null);
   assert.equal(deliveryMark({ direction: "in" }), null);
 });
+
+test("parseGigabytes reads what a person types", async () => {
+  const { parseGigabytes } = await import("../public/lib/format.js");
+  assert.equal(parseGigabytes("12.5"), 12.5);
+  assert.equal(parseGigabytes(" 12,5 GB "), 12.5);
+  assert.equal(parseGigabytes("0"), 0);
+  for (const bad of ["", "abc", "-3", "1.2.3", "12 MB"])
+    assert.equal(parseGigabytes(bad), undefined, bad);
+});

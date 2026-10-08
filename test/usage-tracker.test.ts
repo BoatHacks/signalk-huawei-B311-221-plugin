@@ -333,3 +333,93 @@ describe("no plan", () => {
     assert.equal(u.snapshot(), undefined);
   });
 });
+
+describe("usage-tracker manual used-data offset", () => {
+  const march = "2026-03-10T00:00:00Z";
+  const mk = (account?: object) =>
+    createUsageTracker({
+      plan: plan(),
+      account: account as never,
+      now: () => t(march),
+    });
+
+  it("setUsed makes the snapshot show the entered total and counting continues", () => {
+    const u = mk();
+    u.update(s(0, 0, march));
+    const r = u.setUsed(4 * GB);
+    assert.equal(r.snapshot?.usedBytes, 4 * GB);
+    u.update(s(GB, 0, "2026-03-10T00:10:00Z"));
+    assert.equal(u.snapshot()?.usedBytes, 5 * GB);
+  });
+
+  it("entering a new figure replaces the earlier correction instead of stacking", () => {
+    const u = mk();
+    u.update(s(0, 0, march));
+    u.setUsed(4 * GB);
+    u.update(s(GB, 0, "2026-03-10T00:10:00Z"));
+    u.setUsed(6 * GB);
+    assert.equal(u.snapshot()?.usedBytes, 6 * GB);
+  });
+
+  it("a figure below what was tracked gives a negative offset, never negative usage", () => {
+    const u = mk();
+    u.update(s(0, 0, march));
+    u.update(s(2 * GB, 0, "2026-03-10T00:10:00Z"));
+    u.setUsed(GB);
+    assert.equal(u.snapshot()?.usedBytes, GB);
+    assert.equal(u.account().offsetBytes, -GB);
+  });
+
+  it("the level follows the corrected figure at once", () => {
+    const u = mk();
+    const r = u.setUsed(9 * GB);
+    assert.equal(r.level, "warn");
+    assert.equal(r.levelChanged, true);
+    assert.equal(u.setUsed(9.6 * GB).level, "alarm");
+    assert.equal(u.setUsed(GB).level, "normal");
+  });
+
+  it("is kept across a restart but dropped when the period ends", () => {
+    const u = mk();
+    u.update(s(0, 0, march));
+    u.setUsed(4 * GB);
+    const saved = u.account();
+    const again = createUsageTracker({
+      plan: plan(),
+      account: saved,
+      now: () => t(march),
+    });
+    assert.equal(again.snapshot()?.usedBytes, 4 * GB);
+    const next = again.update(s(GB, 0, "2026-04-02T00:00:00Z"));
+    assert.equal(next.periodRolledOver, true);
+    assert.equal(again.account().offsetBytes, undefined);
+    // Only the traffic counted since the rollover remains, no offset.
+    assert.equal(again.snapshot(t("2026-04-02T00:00:00Z"))?.usedBytes, GB);
+  });
+
+  it("a manual reset drops the offset", () => {
+    const u = mk();
+    u.setUsed(4 * GB);
+    u.reset();
+    assert.equal(u.snapshot()?.usedBytes, 0);
+    assert.equal(u.account().offsetBytes, undefined);
+  });
+
+  it("is refused without a plan or with a bad value", () => {
+    const none = createUsageTracker({ now: () => t(march) });
+    assert.equal(none.setUsed(GB).ignored, "no plan");
+    const u = mk();
+    assert.ok(u.setUsed(-1).ignored);
+    assert.ok(u.setUsed(Number.NaN).ignored);
+    assert.equal(u.snapshot()?.usedBytes, 0);
+  });
+
+  it("starts a new period first if the old one ended with no sample since", () => {
+    const u = mk();
+    u.update(s(0, 0, march));
+    u.update(s(GB, 0, "2026-03-10T01:00:00Z"));
+    const r = u.setUsed(2 * GB, t("2026-04-05T00:00:00Z"));
+    assert.equal(r.periodRolledOver, true);
+    assert.equal(r.snapshot?.usedBytes, 2 * GB);
+  });
+});

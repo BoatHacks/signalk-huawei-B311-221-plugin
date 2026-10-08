@@ -332,6 +332,15 @@ export function createRuntime(opts: RuntimeOptions): Runtime {
             await router.deleteSms(msg.index);
           },
         },
+        setPlanUsed(usedBytes) {
+          if (!tracker) return false;
+          const update = tracker.setUsed(usedBytes);
+          if (update.ignored) return false;
+          saveUsage();
+          if (update.snapshot) publisher.publishPlan(update.snapshot);
+          publisher.notifyPlan(update.level, update.snapshot);
+          return true;
+        },
         resetPlan() {
           if (!tracker) return;
           const update = tracker.reset();

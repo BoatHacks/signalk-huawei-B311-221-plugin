@@ -93,6 +93,10 @@ function setup(over: Partial<RoutesDeps> = {}) {
         calls.push(`router.remove ${m.index}`);
       },
     },
+    setPlanUsed: (bytes) => {
+      calls.push(`setPlanUsed ${bytes}`);
+      return true;
+    },
     resetPlan: () => {
       calls.push("resetPlan");
     },
@@ -126,7 +130,8 @@ test("reads are registered readonly, writes get no access() so the server makes 
   assert.equal(level("POST", "/sms/:id/read"), "admin");
   assert.equal(level("DELETE", "/sms/:id"), "admin");
   assert.equal(level("POST", "/plan/reset"), "admin");
-  assert.equal(regs.length, 6);
+  assert.equal(level("POST", "/plan/used"), "admin");
+  assert.equal(regs.length, 7);
 });
 
 test("GET /status returns the snapshot", async () => {
@@ -217,6 +222,7 @@ test("write routes refuse non-admins before doing anything", async () => {
     ["POST", "/sms/:id/read", { params: { id: "id-1" } }],
     ["DELETE", "/sms/:id", { params: { id: "id-1" } }],
     ["POST", "/plan/reset", {}],
+    ["POST", "/plan/used", { body: { usedBytes: 5 } }],
   ];
   for (const [m, p, req] of reqs) {
     const res = await call(find(m, p), req);
@@ -285,6 +291,25 @@ test("POST /plan/reset resets the plan", async () => {
   const res = await call(find("POST", "/plan/reset"));
   assert.equal(res.statusCode, 200);
   assert.deepEqual(calls, ["resetPlan"]);
+});
+
+test("POST /plan/used sets the used data, and refuses junk or a missing plan", async () => {
+  const { find, calls } = setup();
+  const ok = await call(find("POST", "/plan/used"), {
+    body: { usedBytes: 12_500_000_000 },
+  });
+  assert.equal(ok.statusCode, 200);
+  assert.deepEqual(calls, ["setPlanUsed 12500000000"]);
+  for (const usedBytes of [-1, "5", null, Number.NaN, 1e15]) {
+    const bad = await call(find("POST", "/plan/used"), { body: { usedBytes } });
+    assert.equal(bad.statusCode, 400, String(usedBytes));
+  }
+  assert.equal(calls.length, 1);
+  const none = setup({ setPlanUsed: () => false });
+  const res = await call(none.find("POST", "/plan/used"), {
+    body: { usedBytes: 1 },
+  });
+  assert.equal(res.statusCode, 409);
 });
 
 test("the body is read from the stream when the server did not parse it", async () => {

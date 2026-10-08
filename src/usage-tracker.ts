@@ -13,6 +13,9 @@
 // - The first sample ever seen (no lastCounter) is only a baseline.
 // - Usage during downtime across period boundaries is attributed to the
 //   period containing the sample (it cannot be split); no double counting.
+// - A manual offset (setUsed) covers data used before tracking began in the
+//   period. It belongs to the current period only: rollover and manual reset
+//   drop it. Used = max(0, upload + download + offset).
 // - Thresholds escalate immediately and de-escalate only once the ratio is
 //   HYSTERESIS below the threshold. Only matters when usage can fall (manual
 //   reset, plan change); a period rollover drops the ratio to ~0 anyway.
@@ -54,7 +57,13 @@ export interface UsageTracker {
   snapshot(at?: number): PlanSnapshot | undefined;
   account(): UsageAccount;
   setPlan(plan: PlanConfig | undefined): void;
-  /** Manual reset: new period baseline now, usage zeroed. */
+  /**
+   * Set the total used so far in the current period (as the carrier shows
+   * it) by storing the difference to the tracked bytes as an offset.
+   * Does nothing without a valid plan or with an invalid value.
+   */
+  setUsed(usedBytes: number, at?: number): UsageUpdate;
+  /** Manual reset: new period baseline now, usage zeroed, offset dropped. */
   reset(at?: number): UsageUpdate;
   currentLevel(): UsageLevel;
 }
@@ -142,6 +151,8 @@ export function createUsageTracker(
         uploadBytes: a.uploadBytes,
         downloadBytes: a.downloadBytes,
       };
+      if (typeof a.offsetBytes === "number" && Number.isFinite(a.offsetBytes))
+        out.offsetBytes = Math.trunc(a.offsetBytes);
       if (
         a.lastCounter &&
         isCount(a.lastCounter.uploadBytes) &&
@@ -161,7 +172,10 @@ export function createUsageTracker(
   const buildSnapshot = (at: number): PlanSnapshot | undefined => {
     if (!plan) return undefined;
     let start = Date.parse(acct.periodStart);
-    let used = acct.uploadBytes + acct.downloadBytes;
+    let used = Math.max(
+      0,
+      acct.uploadBytes + acct.downloadBytes + (acct.offsetBytes ?? 0),
+    );
     const calendar = periodStartFor(at, plan.resetDay);
     if (calendar > start) {
       start = calendar;
@@ -215,6 +229,7 @@ export function createUsageTracker(
           acct.periodStart = new Date(calendar).toISOString();
           acct.uploadBytes = 0;
           acct.downloadBytes = 0;
+          delete acct.offsetBytes;
           periodRolledOver = true;
         }
       }
@@ -262,6 +277,7 @@ export function createUsageTracker(
         uploadBytes: acct.uploadBytes,
         downloadBytes: acct.downloadBytes,
       };
+      if (acct.offsetBytes) out.offsetBytes = acct.offsetBytes;
       if (acct.lastCounter) out.lastCounter = { ...acct.lastCounter };
       return out;
     },
@@ -271,11 +287,53 @@ export function createUsageTracker(
       refreshLevel(buildSnapshot(now()));
     },
 
+    setUsed(usedBytes, at) {
+      const when = at ?? now();
+      const unchanged = (reason: string): UsageUpdate => ({
+        snapshot: buildSnapshot(when),
+        level,
+        levelChanged: false,
+        addedBytes: 0,
+        counterReset: false,
+        periodRolledOver: false,
+        ignored: reason,
+      });
+      if (!plan) return unchanged("no plan");
+      if (!isCount(usedBytes)) return unchanged("invalid value");
+      // A period may have ended with no sample since; start the new one first.
+      let periodRolledOver = false;
+      const calendar = periodStartFor(when, plan.resetDay);
+      if (calendar > Date.parse(acct.periodStart)) {
+        acct.periodStart = new Date(calendar).toISOString();
+        acct.uploadBytes = 0;
+        acct.downloadBytes = 0;
+        periodRolledOver = true;
+      }
+      const offset = Math.round(
+        usedBytes - (acct.uploadBytes + acct.downloadBytes),
+      );
+      if (offset === 0) delete acct.offsetBytes;
+      else acct.offsetBytes = offset;
+      const snapshot = buildSnapshot(when);
+      // An explicit correction sets the level outright, no hysteresis.
+      const before = level;
+      level = snapshot ? rawLevel(snapshot.usedRatio, plan) : "normal";
+      return {
+        snapshot,
+        level,
+        levelChanged: level !== before,
+        addedBytes: 0,
+        counterReset: false,
+        periodRolledOver,
+      };
+    },
+
     reset(at) {
       const when = at ?? now();
       acct.periodStart = new Date(when).toISOString();
       acct.uploadBytes = 0;
       acct.downloadBytes = 0;
+      delete acct.offsetBytes;
       const snapshot = buildSnapshot(when);
       level = "normal";
       return {

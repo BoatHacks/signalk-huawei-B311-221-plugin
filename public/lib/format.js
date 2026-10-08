@@ -174,3 +174,12 @@ export function deliveryMark(message) {
       return null;
   }
 }
+
+/**
+ * A decimal gigabyte amount typed by a person: "12.5", "12,5" or "12.5 GB".
+ * Returns undefined for anything else, including negative numbers.
+ */
+export function parseGigabytes(text) {
+  const m = /^\s*(\d+(?:[.,]\d+)?)\s*(?:gb)?\s*$/i.exec(String(text));
+  return m ? Number(m[1].replace(",", ".")) : undefined;
+}

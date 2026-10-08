@@ -48,6 +48,8 @@ export interface RoutesDeps {
     markRead(message: SmsMessage): Promise<void>;
     remove(message: SmsMessage): Promise<void>;
   };
+  /** False when there is no plan to correct or the value is unusable. */
+  setPlanUsed(usedBytes: number): boolean;
   resetPlan(): void;
   isAdmin(req: Req): boolean;
   now?: () => number;
@@ -56,6 +58,8 @@ export interface RoutesDeps {
 
 const MAX_TEXT_CHARS = 500;
 const MAX_BODY_BYTES = 8 * 1024;
+/** Far above any real plan (10 TB); only catches typos and junk. */
+const MAX_USED_BYTES = 1e13;
 const SEND_LIMIT = 5;
 const SEND_WINDOW_MS = 60_000;
 const DEFAULT_LIST = 50;
@@ -218,6 +222,27 @@ export function registerRoutes(router: RouterLike, deps: RoutesDeps): void {
       const msg = messageFor(req);
       await deps.actions.remove(msg);
       deps.sms.remove(msg.id);
+      return res.json({ ok: true });
+    }),
+  );
+
+  router.post(
+    "/plan/used",
+    admin("set plan usage", async (req, res) => {
+      const b = await readBody(req);
+      const bytes = (b as { usedBytes?: unknown } | undefined)?.usedBytes;
+      if (
+        typeof bytes !== "number" ||
+        !Number.isFinite(bytes) ||
+        bytes < 0 ||
+        bytes > MAX_USED_BYTES
+      )
+        throw new HttpError(
+          400,
+          "'usedBytes' must be a number of bytes, zero or more",
+        );
+      if (!deps.setPlanUsed(bytes))
+        throw new HttpError(409, "No data plan is configured");
       return res.json({ ok: true });
     }),
   );

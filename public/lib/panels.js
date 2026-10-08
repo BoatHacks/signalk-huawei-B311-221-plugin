@@ -7,6 +7,7 @@ import {
   formatNumber,
   metricFraction,
   metricState,
+  parseGigabytes,
   planState,
 } from "./format.js";
 import { baseCss } from "./styles.js";
@@ -160,7 +161,7 @@ export class LtePlan extends Panel {
     .actions { margin-top: 14px; }
   `;
   /** @param {{plan?: object, stale: boolean, canWrite: boolean}} d */
-  set data({ plan, stale, canWrite, onReset, now = Date.now() }) {
+  set data({ plan, stale, canWrite, onReset, onSetUsed, now = Date.now() }) {
     const panel = el("section", "panel");
     panel.append(el("h2", "", "Data plan"));
     if (!plan) {
@@ -214,8 +215,26 @@ export class LtePlan extends Panel {
       ),
     );
     panel.append(dl);
-    if (canWrite && onReset) {
+    if (canWrite && (onReset || onSetUsed)) {
       const actions = el("div", "actions");
+      if (onSetUsed) {
+        const set = el("button", "", "Set used data");
+        set.type = "button";
+        set.addEventListener("click", () => {
+          const answer = globalThis.prompt(
+            "Data used so far in this plan period, in GB, as your carrier shows it. The plugin keeps counting from there.",
+            String(Math.round(plan.usedBytes / 1e7) / 100),
+          );
+          if (answer === null) return;
+          const gb = parseGigabytes(answer);
+          if (gb === undefined) {
+            globalThis.alert("Please enter a number of GB, for example 12.5");
+            return;
+          }
+          onSetUsed(Math.round(gb * 1e9));
+        });
+        actions.append(set);
+      }
       const b = el("button", "", "Restart plan period");
       b.type = "button";
       b.addEventListener("click", () => {
@@ -226,7 +245,7 @@ export class LtePlan extends Panel {
         )
           onReset();
       });
-      actions.append(b);
+      if (onReset) actions.append(b);
       panel.append(actions);
     }
     this.mount(panel);

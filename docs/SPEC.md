@@ -167,6 +167,7 @@ none if the server runs without security.
 | `POST /sms` `{to, text}` | Send an SMS. Returns accepted/failed. Validates number and length |
 | `POST /sms/:id/read`, `DELETE /sms/:id` | Mark read / delete (also on the router) |
 | `POST /plan/reset` | Manually restart the plan period baseline |
+| `POST /plan/used` | Body `{"usedBytes": n}`: set the total used so far in this period (admin) |
 
 ### 6.3 Status Tiles compatibility
 

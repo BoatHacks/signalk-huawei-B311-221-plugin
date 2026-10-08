@@ -50,6 +50,7 @@ export default function createPlugin(
       markRead: (m) => current().actions.markRead(m),
       remove: (m) => current().actions.remove(m),
     },
+    setPlanUsed: (bytes) => current().setPlanUsed(bytes),
     resetPlan: () => current().resetPlan(),
     isAdmin,
     log: (m) => app.debug(`routes: ${m}`),

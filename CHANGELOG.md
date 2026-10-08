@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Data plan: "Set used data" in the web page lets an admin enter the data
+  already used in the current plan period, as the carrier shows it, for
+  installs that start mid-cycle. It ends with the period.
+
 ## 0.1.3 - 2026-10-08
 
 - Messages sent from the web page now appear in the message list, ordered by

@@ -54,6 +54,12 @@ export interface UsageAccount {
   periodStart: string;
   uploadBytes: number;
   downloadBytes: number;
+  /**
+   * Manual correction for data used before the plugin started counting in
+   * this period (or that it missed). Added to upload + download, may be
+   * negative, and is dropped when the period ends or is restarted.
+   */
+  offsetBytes?: number;
   /** Last router counter sample, used to compute deltas. */
   lastCounter?: { uploadBytes: number; downloadBytes: number };
 }
